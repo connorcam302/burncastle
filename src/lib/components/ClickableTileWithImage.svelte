@@ -35,7 +35,7 @@
 	<!-- Content -->
 	<div class="relative p-4 h-full w-full text-left flex flex-col gap-2">
 		<div
-			class="font-bold text-6xl text-white group-hover:text-burnley transition-colors duration-300 capitalize"
+			class="font-bold text-6xl text-white group-hover:text-highlight transition-colors duration-300 capitalize"
 		>
 			{title}
 		</div>

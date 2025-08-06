@@ -3,18 +3,19 @@ import { v } from 'convex/values';
 
 export default defineSchema({
 	players: defineTable({
+		nameId: v.string(),
 		name: v.string(),
 		nickname: v.optional(v.string()),
 		email: v.optional(v.string())
 	}),
 
 	matches: defineTable({
-		date: v.string(), // ISO date
-		teamOneId: v.id('teams'),
-		teamTwoId: v.id('teams'),
+		order: v.number(),
+		teamOneId: v.optional(v.id('teams')),
+		teamTwoId: v.optional(v.id('teams')),
 		teamOneScore: v.number(),
 		teamTwoScore: v.number()
-	}),
+	}).index('order', ['order']),
 
 	teams: defineTable({
 		matchId: v.id('matches'),
@@ -27,8 +28,11 @@ export default defineSchema({
 		playerId: v.id('players'),
 		goals: v.number(),
 		assists: v.number(),
-		isCaptain: v.optional(v.boolean())
-	}),
+		isCaptain: v.boolean(),
+		rating: v.number(),
+		position: v.string(),
+		breakdown: v.string()
+	}).index('playerId', ['playerId']),
 
 	auctions: defineTable({
 		matchId: v.id('matches'),
