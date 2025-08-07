@@ -11,17 +11,19 @@ export default defineSchema({
 
 	matches: defineTable({
 		order: v.number(),
-		teamOneId: v.optional(v.id('teams')),
-		teamTwoId: v.optional(v.id('teams')),
-		teamOneScore: v.number(),
-		teamTwoScore: v.number()
-	}).index('order', ['order']),
+		hasAuction: v.boolean()
+	})
+		.index('order', ['order'])
+		.index('hasAuction', ['hasAuction']),
 
 	teams: defineTable({
 		matchId: v.id('matches'),
+		score: v.number(),
 		name: v.string(),
-		playerIds: v.array(v.id('players'))
-	}),
+		playerIds: v.array(v.id('players')),
+		captainId: v.id('players'),
+		teamColour: v.optional(v.string())
+	}).index('matchId', ['matchId']),
 
 	stats: defineTable({
 		matchId: v.id('matches'),
@@ -34,24 +36,15 @@ export default defineSchema({
 		breakdown: v.string()
 	}).index('playerId', ['playerId']),
 
-	auctions: defineTable({
-		matchId: v.id('matches'),
-		captainOneId: v.id('players'),
-		captainTwoId: v.id('players'),
-		finished: v.boolean()
-	}),
-
 	bids: defineTable({
-		auctionId: v.id('auctions'),
-		playerId: v.id('players'), // player being bid on
-		bidderId: v.id('players'), // captain bidding
+		matchId: v.string(),
+		playerId: v.id('players'),
+		bidderId: v.id('players'),
+		winningBid: v.boolean(),
 		amount: v.number(),
 		timestamp: v.number()
-	}),
-
-	assignments: defineTable({
-		auctionId: v.id('auctions'),
-		playerId: v.id('players'),
-		assignedToCaptainId: v.id('players')
 	})
+		.index('playerId', ['playerId'])
+		.index('matchId_playerId_winningBid', ['matchId', 'playerId', 'winningBid'])
+		.index('matchId_playerId', ['matchId', 'playerId'])
 });

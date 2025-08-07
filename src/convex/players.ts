@@ -16,19 +16,34 @@ export const getAll = query({
 				const matchesWithStats = await Promise.all(
 					allMatches.map(async (match) => {
 						const stats = allStats.find((s) => s.matchId === match._id);
-						return { ...match, stats };
+						const winningBid = await ctx.db
+							.query('bids')
+							.withIndex('matchId_playerId_winningBid', (q) =>
+								q.eq('matchId', match._id).eq('playerId', player._id).eq('winningBid', true)
+							)
+							.first();
+
+						return { ...match, stats, price: winningBid?.amount };
 					})
-				).then((matches) => matches.sort((a, b) => a.order - b.order));
+				).then((matches) =>
+					matches.sort((a, b) => b.order - a.order).filter((m) => m.stats !== undefined)
+				);
 
 				if (matchesWithStats.length === 0) {
 					return player;
 				}
 
-				return { ...player, stats: matchesWithStats[0].stats };
+				return {
+					...player,
+					stats: matchesWithStats.map((m) => {
+						return { order: m.order, ...m.stats, price: m.price };
+					})
+				};
 			})
 		);
 
-		return allPlayersWithStats;
+		// @ts-expect-error stat unknown
+		return allPlayersWithStats.sort((a, b) => b.stats[0]?.rating - a.stats[0]?.rating);
 	}
 });
 
