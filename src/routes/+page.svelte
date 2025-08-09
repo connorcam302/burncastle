@@ -4,7 +4,7 @@
 
 	const matchesPlayed = 3;
 
-	const auctionText = 'Next auction at 19:00 August 8th';
+	const auctionText = 'Next auction at 19:00 August 10th';
 </script>
 
 <div class="max-w-6xl mx-auto grow w-full">
@@ -16,7 +16,7 @@
 			class="w-full h-80"
 		>
 			<div class="flex flex-col items-stretch h-full">
-				<div>See historic burncastle matches</div>
+				<div>See historic Burncastle matches</div>
 				<div class="grow"></div>
 				<div>
 					{matchesPlayed} matches played

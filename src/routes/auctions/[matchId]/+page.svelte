@@ -53,17 +53,41 @@
 			useQuery(api.bids.getOnePlayer, { playerId: auction.data.auction.displayedPlayerId, matchId })
 	);
 
-	let newBidAmount = $state(0);
+	let newBidAmountRaw = $state(0);
+	let newBidAmount = $derived(parseInt(Number(newBidAmountRaw)));
 
 	const submitBid = () => {
-		console.log(bidsOnSelectedPlayer?.data, newBidAmount);
 		if (
-			newBidAmount <= 0 ||
+			newBidAmount < 0 ||
 			(bidsOnSelectedPlayer?.data.length > 0 &&
 				!(bidsOnSelectedPlayer?.data[0]?.amount < newBidAmount))
 		) {
 			alert('Bid must be greater than 0 and greater than the current bid');
 			return;
+		}
+
+		// check if the player has enough funds
+		// team 1 scenario
+		if (auction.data.teams[0].captainId === userId) {
+			if (newBidAmount + teamOneSpend > startingAmount) {
+				alert('You do not have enough funds to bid this amount');
+				return;
+			}
+
+			if (auction.data.teams[0].playerIds.length === auction.data.participants.length / 2) {
+				alert('Your team is full');
+				return;
+			}
+		}
+		if (auction.data.teams[1].captainId === userId) {
+			if (newBidAmount + teamTwoSpend > startingAmount) {
+				alert('You do not have enough funds to bid this amount');
+				return;
+			}
+			if (auction.data.teams[1].playerIds.length === auction.data.participants.length / 2) {
+				alert('Your team is full');
+				return;
+			}
 		}
 
 		client.mutation(api.bids.newBid, {
@@ -149,6 +173,13 @@
 		});
 	};
 
+	const openAuction = () => {
+		client.mutation(api.auctions.setAuction, {
+			auctionId: auction.data?.auction?._id,
+			live: true
+		});
+	};
+
 	$inspect(auction, allPlayers, winningBids, remainingPlayers);
 </script>
 
@@ -157,37 +188,60 @@
 		<div
 			class="w-full bg-gradient-to-r from-[#0a0e13]/95 border-0 to-[#1e2c3a]/95 text-white p-4 flex flex-col gap-4 mb-4 relative"
 		>
-			<div class="flex gap-4 items-center">
-				<select
-					class="bg-zinc-700 text-white outline-none ring-0 border-0 w-32"
-					bind:value={auctioneerSelectedPlayerId}
-				>
-					{#each auction.data.participants as player (player)}
-						<option value={player}>{allPlayers.data.find((p) => p._id === player).name}</option>
-					{/each}
-				</select>
-				<button
-					class="transition-all duration-300
-					hover:bg-gradient-to-r hover:from-[rgba(255,215,0,0.1)] hover:to-[rgba(255,255,255,0.05)] hover:shadow-[0_0_4px_rgba(255,215,0,0.3)] border-2 hover:border-[rgba(255,215,0,0.1)] bg-zinc-900 border-zinc-800 px-4 uppercase cursor-pointer p-2"
-					onclick={updateDisplayedPlayer}
-				>
-					Set Displayed Player
-				</button>
-				<button
-					class="transition-all duration-300 hover:bg-gradient-to-r hover:from-[rgba(255,215,0,0.1)] hover:to-[rgba(255,255,255,0.05)] hover:shadow-[0_0_4px_rgba(255,215,0,0.3)] border-2 hover:border-[rgba(255,215,0,0.1)] bg-zinc-900 border-zinc-800 px-4 uppercase cursor-pointer p-2"
-					onclick={markBidAsWinner}>Mark Bid As Winner</button
-				>
-				<button
-					class="transition-all duration-300 hover:bg-gradient-to-r hover:from-[rgba(255,215,0,0.1)] hover:to-[rgba(255,255,255,0.05)] hover:shadow-[0_0_4px_rgba(255,215,0,0.3)] border-2 hover:border-[rgba(255,215,0,0.1)] bg-zinc-900 border-zinc-800 px-4 uppercase cursor-pointer p-2"
-					onclick={unmarkBidAsWinner}>Unmark Bid As Winner</button
-				>
-				<button
-					class="transition-all duration-300
-					hover:bg-gradient-to-r hover:from-[rgba(255,215,0,0.1)] hover:to-[rgba(255,255,255,0.05)] hover:shadow-[0_0_4px_rgba(255,215,0,0.3)] border-2 hover:border-[rgba(255,215,0,0.1)] bg-zinc-900 border-zinc-800 px-4 uppercase cursor-pointer p-2"
-					onclick={clearDisplayedPlayer}
-				>
-					Clear Displayed Player
-				</button>
+			<div class="flex justify-center gap-32">
+				<div class="flex flex-col gap-4">
+					<div class="text-center font-medium text-xl">Displayed Player</div>
+					<select
+						class="bg-zinc-700 text-white outline-none ring-0 border-0 w-full"
+						bind:value={auctioneerSelectedPlayerId}
+					>
+						{#each auction.data.participants as player (player)}
+							<option value={player}>{allPlayers.data.find((p) => p._id === player).name}</option>
+						{/each}
+					</select>
+					<button
+						class="transition-all duration-300 bg-zinc-900 border-zinc-700 border-2 hover:bg-zinc-700
+					px-4 uppercase cursor-pointer p-2 w-full"
+						onclick={updateDisplayedPlayer}
+					>
+						Set Displayed Player
+					</button>
+					<button
+						class="transition-all duration-300 bg-red-900 border-zinc-700 border-2 hover:bg-red-700
+					px-4 uppercase cursor-pointer p-2 w-full"
+						onclick={clearDisplayedPlayer}
+					>
+						Clear Displayed Player
+					</button>
+				</div>
+				<div class="flex flex-col gap-4">
+					<div class="text-center font-medium text-xl">Current Bid</div>
+					<button
+						class="transition-all duration-300 bg-green-900 border-zinc-700 border-2 hover:bg-green-700
+					px-4 uppercase cursor-pointer p-2 w-full"
+						onclick={markBidAsWinner}>Mark Bid As Winner</button
+					>
+					<button
+						class="transition-all duration-300 bg-red-900 border-zinc-700 border-2 hover:bg-red-700
+					px-4 uppercase cursor-pointer p-2 w-full"
+						onclick={unmarkBidAsWinner}>Unmark Bid As Winner</button
+					>
+				</div>
+				<div class="flex flex-col gap-4">
+					<div class="text-center font-medium text-xl">Auction</div>
+					<button
+						class="transition-all duration-300 bg-zinc-900 border-zinc-700 border-2 hover:bg-zinc-700
+					px-4 uppercase cursor-pointer p-2 w-full"
+						onclick={openAuction}>Open Auction</button
+					>
+					<button
+						class="transition-all duration-300 bg-zinc-900 border-zinc-700 border-2 hover:bg-zinc-700
+					px-4 uppercase cursor-pointer p-2 w-full"
+						onclick={closeAuction}
+					>
+						Close Auction
+					</button>
+				</div>
 			</div>
 		</div>
 	{/if}
@@ -223,7 +277,7 @@
 		{/if}
 		<div class="text-center font-medium text-4xl">Burncastle {auction.data.order} Auction</div>
 		<div class="flex w-full gap-4 min-h-96">
-			<div class="flex flex-col gap-4 items-center">
+			<div class="flex flex-col gap-4 items-center grow">
 				<div class="flex flex-col gap-4 w-full items-center">
 					<div class="text-center font-medium text-4xl">{auction.data.teams[0].name}</div>
 					<img
@@ -243,42 +297,48 @@
 					</div>
 				</div>
 				<div class="flex flex-col gap-4 w-full items-center justify-center">
-					{#each auction.data.teams[0].playerIds
-						.slice()
-						.filter((p) => p !== auction.data.teams[0].captainId)
-						.sort((a, b) => {
-							const playerA = allPlayers.data.find((p) => p._id === a);
-							const playerB = allPlayers.data.find((p) => p._id === b);
-							return playerA.stats[0].rating < playerB.stats[0].rating ? 1 : -1;
-						}) as player (player)}
-						{@const playerData = allPlayers.data.find((p) => p._id === player)}
-						{@const price = winningBids.find((b) => b.playerId === player)?.amount ?? 0}
-						{@const previousPrice =
-							playerData.stats[
-								playerData.stats.findIndex((s) => s.order === auction.data.order) + 1
-							]?.price ?? 0}
-						<div class="flex gap-4 w-full items-center justify-start">
-							<img
-								src={`/players/${playerData.nameId}.png`}
-								alt={playerData.name}
-								class="md:w-16 md:h-16 w-16 h-16"
-							/>
-							<div class="text-center font-medium text-lg w-16">
-								{#if previousPrice}
-									{#if previousPrice > price}
-										<span class="text-green-500">(- £{previousPrice - price})</span>
-									{:else}
-										<span class="text-red-500">(+ £{price - previousPrice})</span>
-									{/if}
-								{/if}
-							</div>
-							<div class="text-center font-medium text-2xl w-16">£{price}</div>
-							<div class="text-center text-2xl">{playerData.name}</div>
-						</div>
-					{/each}
+					<table class="w-full">
+						<thead>
+							{#each auction.data.teams[0].playerIds
+								.slice()
+								.filter((p) => p !== auction.data.teams[0].captainId)
+								.sort((a, b) => {
+									const playerA = allPlayers.data.find((p) => p._id === a);
+									const playerB = allPlayers.data.find((p) => p._id === b);
+									return playerA.stats[0].rating < playerB.stats[0].rating ? 1 : -1;
+								}) as player (player)}
+								{@const playerData = allPlayers.data.find((p) => p._id === player)}
+								{@const price = winningBids.find((b) => b.playerId === player)?.amount ?? 0}
+								{@const previousPrice =
+									playerData.stats[
+										playerData.stats.findIndex((s) => s.order === auction.data.order) + 1
+									]?.price ?? 0}
+								<tr>
+									<td class="md:w-16 md:h-16 w-16 h-16">
+										<img
+											src={`/players/${playerData.nameId}.png`}
+											alt={playerData.name}
+											class="md:w-16 md:h-16 w-16 h-16"
+										/>
+									</td>
+									<td class="text-left px-2 text-2xl">{playerData.name}</td>
+									<td class="text-center font-medium text-2xl w-16">£{price}</td>
+									<td class="text-center font-medium text-lg w-24">
+										{#if previousPrice}
+											{#if previousPrice > price}
+												<span class="text-green-500">(- £{previousPrice - price})</span>
+											{:else}
+												<span class="text-red-500">(+ £{price - previousPrice})</span>
+											{/if}
+										{/if}
+									</td>
+								</tr>
+							{/each}
+						</thead>
+					</table>
 				</div>
 			</div>
-			<div class="flex flex-col gap-4 items-center grow bg-black/15 py-4">
+			<div class="flex flex-col gap-4 items-center w-96 bg-black/15 py-4">
 				<div class=" mx-auto my-auto">
 					{#if !auction.data.auction.live}
 						<span class="font-medium text-3xl">Auction Closed</span>
@@ -305,8 +365,10 @@
 							{#if permissions === 'captain'}
 								<div class="flex gap-2">
 									<input
+										step="1"
 										type="number"
-										bind:value={newBidAmount}
+										pattern="[0-9]"
+										bind:value={newBidAmountRaw}
 										min={0}
 										max={350}
 										class="text-white outline-none ring-0 bg-zinc-700 w-44 border-0"
@@ -370,7 +432,7 @@
 					{/if}
 				</div>
 			</div>
-			<div class="flex flex-col gap-4 items-center">
+			<div class="flex flex-col gap-4 items-center grow">
 				<div class="flex flex-col gap-4 w-full items-center">
 					<div class="text-center font-medium text-4xl">{auction.data.teams[1].name}</div>
 					<img
@@ -390,39 +452,45 @@
 					</div>
 				</div>
 				<div class="flex flex-col gap-4 w-full items-center justify-center">
-					{#each auction.data.teams[1].playerIds
-						.slice()
-						.filter((p) => p !== auction.data.teams[1].captainId)
-						.sort((a, b) => {
-							const playerA = winningBids.find((p) => p.playerId === a) ?? { amount: 0 };
-							const playerB = winningBids.find((p) => p.playerId === b) ?? { amount: 0 };
-							return playerA.amount < playerB.amount ? 1 : -1;
-						}) as player (player)}
-						{@const playerData = allPlayers.data.find((p) => p._id === player)}
-						{@const price = winningBids.find((b) => b.playerId === player)?.amount ?? 0}
-						{@const previousPrice =
-							playerData.stats[
-								playerData.stats.findIndex((s) => s.order === auction.data.order) + 1
-							]?.price ?? 0}
-						<div class="flex gap-4 w-full items-center justify-end">
-							<div class="text-center text-2xl">{playerData.name}</div>
-							<div class="text-center font-medium text-2xl w-16">£{price}</div>
-							<div class="text-center font-medium text-lg w-16">
-								{#if previousPrice}
-									{#if previousPrice > price}
-										<span class="text-green-500">(- £{previousPrice - price})</span>
-									{:else}
-										<span class="text-red-500">(+ £{price - previousPrice})</span>
-									{/if}
-								{/if}
-							</div>
-							<img
-								src={`/players/${playerData.nameId}.png`}
-								alt={playerData.name}
-								class="md:w-16 md:h-16 w-16 h-16"
-							/>
-						</div>
-					{/each}
+					<table class="w-full">
+						<tbody>
+							{#each auction.data.teams[1].playerIds
+								.slice()
+								.filter((p) => p !== auction.data.teams[1].captainId)
+								.sort((a, b) => {
+									const playerA = winningBids.find((p) => p.playerId === a) ?? { amount: 0 };
+									const playerB = winningBids.find((p) => p.playerId === b) ?? { amount: 0 };
+									return playerA.amount < playerB.amount ? 1 : -1;
+								}) as player (player)}
+								{@const playerData = allPlayers.data.find((p) => p._id === player)}
+								{@const price = winningBids.find((b) => b.playerId === player)?.amount ?? 0}
+								{@const previousPrice =
+									playerData.stats[
+										playerData.stats.findIndex((s) => s.order === auction.data.order) + 1
+									]?.price ?? 0}
+								<tr>
+									<td class="text-center font-medium text-lg w-24">
+										{#if previousPrice}
+											{#if previousPrice > price}
+												<span class="text-green-500">(- £{previousPrice - price})</span>
+											{:else}
+												<span class="text-red-500">(+ £{price - previousPrice})</span>
+											{/if}
+										{/if}
+									</td>
+									<td class="text-center font-medium text-2xl w-16">£{price}</td>
+									<td class="text-right px-2 text-2xl">{playerData.name}</td>
+									<td class="md:w-16 md:h-16 w-16 h-16">
+										<img
+											src={`/players/${playerData.nameId}.png`}
+											alt={playerData.name}
+											class="md:w-16 md:h-16 w-16 h-16"
+										/>
+									</td>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
 				</div>
 			</div>
 		</div>
