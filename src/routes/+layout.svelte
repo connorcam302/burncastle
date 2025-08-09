@@ -16,7 +16,7 @@
 
 <div class="flex items-center justify-center my-8">
 	<div class="h-full w-full">
-		<div class="flex flex-col items-center justify-center gap-8 max-w-6xl mx-auto h-full">
+		<div class="flex flex-col items-center justify-center gap-8 max-w-6xl mx-auto h-full uppercase">
 			<div class="flex gap-2 mr-auto items-center">
 				<img src="/logo.png" alt="logo" class="md:w-24 md:h-24 w-16 h-16" />
 				<div class="font-bold text-4xl md:text-8xl">

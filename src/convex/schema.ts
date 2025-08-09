@@ -11,10 +11,18 @@ export default defineSchema({
 
 	matches: defineTable({
 		order: v.number(),
-		hasAuction: v.boolean()
+		hasAuction: v.boolean(),
+		participants: v.array(v.id('players'))
 	})
 		.index('order', ['order'])
 		.index('hasAuction', ['hasAuction']),
+
+	auctions: defineTable({
+		matchId: v.id('matches'),
+		live: v.boolean(),
+		auctioneers: v.optional(v.array(v.id('players'))),
+		displayedPlayerId: v.union(v.id('players'), v.null())
+	}).index('matchId', ['matchId']),
 
 	teams: defineTable({
 		matchId: v.id('matches'),
@@ -23,7 +31,9 @@ export default defineSchema({
 		playerIds: v.array(v.id('players')),
 		captainId: v.id('players'),
 		teamColour: v.optional(v.string())
-	}).index('matchId', ['matchId']),
+	})
+		.index('matchId', ['matchId'])
+		.index('captainId_matchId', ['captainId', 'matchId']),
 
 	stats: defineTable({
 		matchId: v.id('matches'),
@@ -44,6 +54,7 @@ export default defineSchema({
 		amount: v.number(),
 		timestamp: v.number()
 	})
+		.index('matchId', ['matchId'])
 		.index('playerId', ['playerId'])
 		.index('matchId_playerId_winningBid', ['matchId', 'playerId', 'winningBid'])
 		.index('matchId_playerId', ['matchId', 'playerId'])

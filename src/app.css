@@ -118,7 +118,7 @@
 		@apply border-border outline-ring/50;
 	}
 	body {
-		@apply bg-background text-foreground;
+		@apply bg-transparent text-foreground;
 	}
 }
 
@@ -130,10 +130,10 @@
 }
 
 html {
-	background-image: url('background.jpg');
+	background-image: url('/background.jpg');
 	background-size: cover; /* Scales to cover entire container, may crop horizontally */
 	background-position: center;
 	background-repeat: no-repeat;
 	height: 100vh;
+	background-attachment: fixed;
 }
-

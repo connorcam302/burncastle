@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { page } from '$app/state';
+
 	let active = 'HOME';
 	const menuItems = ['', 'matches', 'auctions', 'players', 'gallery'];
 
@@ -8,7 +10,7 @@
 </script>
 
 <nav
-	class="flex h-10 items-stretch bg-gradient-to-r from-[#0a0e13] to-[#1e2c3a] border-b-2 border-[#1b2733] select-none overflow-hidden font-sans w-full text-xl"
+	class="flex h-10 items-stretch bg-gradient-to-r from-[#0a0e13] to-[#1e2c3a] select-none overflow-hidden font-sans w-full text-xl"
 >
 	{#each menuItems as item, i (i)}
 		<a class="relative flex items-stretch cursor-pointer group -left-2" href={`/${item}`}>
@@ -18,14 +20,11 @@
 			{/if}
 
 			<!-- Skewed background -->
-			{#if active === item}
+			{#if page.url.pathname === `/${item}`}
 				<div
-					class={`h-full flex items-center px-6 skew-x-[25deg] transition-all duration-300 border-2 border-transparent
-					${
-						active === item
-							? 'bg-gradient-to-r from-[rgba(255,215,0,0.1)] to-[rgba(255,255,255,0.05)] shadow-[0_0_4px_rgba(255,215,0,0.3)] border-2 border-[rgba(255,215,0,0.1)]'
-							: ''
-					}`}
+					class={`h-full flex items-center px-6 skew-x-[25deg] transition-all duration-300 
+					bg-gradient-to-r from-[rgba(255,215,0,0.1)] to-[rgba(255,255,255,0.05)] shadow-[0_0_4px_rgba(255,215,0,0.3)] border-2 border-[rgba(255,215,0,0.1)]
+					`}
 				>
 					<!-- Unskewed text -->
 					<span
@@ -57,3 +56,6 @@
 		</a>
 	{/each}
 </nav>
+
+<style>
+</style>

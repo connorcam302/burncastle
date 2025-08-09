@@ -1,6 +1,6 @@
 import { v } from 'convex/values';
 import { Id } from './_generated/dataModel';
-import { query } from './_generated/server';
+import { mutation, query } from './_generated/server';
 
 export const getAll = query({
 	args: {},
@@ -46,10 +46,20 @@ export const get = query({
 			throw new Error(`Match ${args.matchId} not found`);
 		}
 
+		const bids = await ctx.db
+			.query('bids')
+			.withIndex('matchId', (q) => q.eq('matchId', match._id))
+			.collect();
+
 		const teams = await ctx.db
 			.query('teams')
 			.withIndex('matchId', (q) => q.eq('matchId', match._id))
 			.collect();
+
+		const auction = await ctx.db
+			.query('auctions')
+			.withIndex('matchId', (q) => q.eq('matchId', match._id))
+			.first();
 
 		const teamsWithCaptains = await Promise.all(
 			teams.map(async (team) => {
@@ -61,6 +71,24 @@ export const get = query({
 			})
 		);
 
-		return { ...match, teams: teamsWithCaptains };
+		return { ...match, teams: teamsWithCaptains, bids, auction };
+	}
+});
+
+export const setDisplayedPlayer = mutation({
+	args: { auctionId: v.id('auctions'), playerId: v.union(v.id('players'), v.null()) },
+	handler: async (ctx, args) => {
+		await ctx.db.patch(args.auctionId, {
+			displayedPlayerId: args.playerId
+		});
+	}
+});
+
+export const setAuction = mutation({
+	args: { auctionId: v.id('auctions'), live: v.boolean() },
+	handler: async (ctx, args) => {
+		await ctx.db.patch(args.auctionId, {
+			live: args.live
+		});
 	}
 });
