@@ -56,7 +56,12 @@
 	let newBidAmount = $state(0);
 
 	const submitBid = () => {
-		if (!(newBidAmount > 0) || !(bidsOnSelectedPlayer?.data[0]?.amount < newBidAmount)) {
+		console.log(bidsOnSelectedPlayer?.data, newBidAmount);
+		if (
+			newBidAmount <= 0 ||
+			(bidsOnSelectedPlayer?.data.length > 0 &&
+				!(bidsOnSelectedPlayer?.data[0]?.amount < newBidAmount))
+		) {
 			alert('Bid must be greater than 0 and greater than the current bid');
 			return;
 		}
