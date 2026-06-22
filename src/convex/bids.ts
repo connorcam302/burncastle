@@ -1,6 +1,5 @@
 import { v } from 'convex/values';
 import { mutation, query } from './_generated/server';
-import { Id } from './_generated/dataModel';
 
 export const getOnePlayer = query({
 	args: { playerId: v.id('players'), matchId: v.id('matches') },
@@ -57,10 +56,23 @@ export const markWinningBid = mutation({
 
 		if (!bid) return;
 
+		const existingWinners = await ctx.db
+			.query('bids')
+			.withIndex('matchId_playerId_winningBid', (q) =>
+				q.eq('matchId', bid.matchId).eq('playerId', bid.playerId).eq('winningBid', true)
+			)
+			.collect();
+
+		await Promise.all(
+			existingWinners
+				.filter((winningBid) => winningBid._id !== args.bidId)
+				.map((winningBid) => ctx.db.patch(winningBid._id, { winningBid: false }))
+		);
+
 		const team = await ctx.db
 			.query('teams')
 			.withIndex('captainId_matchId', (q) =>
-				q.eq('captainId', bid.bidderId).eq('matchId', bid.matchId as Id<'matches'>)
+				q.eq('captainId', bid.bidderId).eq('matchId', bid.matchId)
 			)
 			.unique();
 
@@ -68,7 +80,9 @@ export const markWinningBid = mutation({
 
 		if (team) {
 			await ctx.db.patch(args.bidId, { winningBid: true });
-			await ctx.db.patch(team._id, { playerIds: [...team.playerIds, bid?.playerId] });
+			if (!team.playerIds.includes(bid.playerId)) {
+				await ctx.db.patch(team._id, { playerIds: [...team.playerIds, bid.playerId] });
+			}
 		}
 	}
 });
@@ -85,7 +99,7 @@ export const unmarkWinningBid = mutation({
 		const team = await ctx.db
 			.query('teams')
 			.withIndex('captainId_matchId', (q) =>
-				q.eq('captainId', bid.bidderId).eq('matchId', bid.matchId as Id<'matches'>)
+				q.eq('captainId', bid.bidderId).eq('matchId', bid.matchId)
 			)
 			.unique();
 

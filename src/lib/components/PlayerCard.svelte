@@ -1,18 +1,15 @@
 <script lang="ts">
-	import type { FunctionReturnType } from 'convex/server';
-	import { api } from '../../convex/_generated/api';
 	import type { Doc } from '../../convex/_generated/dataModel';
 	import { cn } from '$lib/utils';
 
-	type Player = FunctionReturnType<typeof api.players.getAll>[number];
-	type Stats = Doc<'stats'>;
+	type Player = Pick<Doc<'players'>, '_id' | 'name' | 'nameId'>;
+	type Stats = Pick<Doc<'stats'>, 'rating' | 'position' | 'breakdown' | 'isCaptain'>;
+	type StatBreakdown = Partial<Record<string, number>>;
 
 	let { player, stats }: { player: Player; stats: Stats } = $props();
 
-	let statBreakdown;
-	if (stats?.breakdown !== undefined) {
-		statBreakdown = JSON.parse(stats.breakdown);
-	}
+	const statBreakdown: StatBreakdown =
+		stats?.breakdown !== undefined ? JSON.parse(stats.breakdown) : {};
 
 	const cardColour = (rating: number) => {
 		if (rating >= 65)
@@ -29,7 +26,7 @@
 		<div class="flex justify-between">
 			<div class="flex flex-col items-center w-fit">
 				<div class="font-medium text-3xl">{stats.rating ?? 0}</div>
-				<div class="text-xl">{stats?.position ?? '??'}</div>
+				<div class="text-xl">{stats.position ?? '??'}</div>
 			</div>
 			<img src={`/players/${player.nameId}.png`} alt={player.name} class="w-24 h-24" />
 		</div>

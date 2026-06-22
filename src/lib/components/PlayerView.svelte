@@ -1,19 +1,25 @@
 <script lang="ts">
-	import { fade, fly, slide } from 'svelte/transition';
+	import { fly } from 'svelte/transition';
+	import type { FunctionReturnType } from 'convex/server';
 	import { api } from '../../convex/_generated/api';
-	import type { Doc } from '../../convex/_generated/dataModel';
 	import PlayerCard from './PlayerCard.svelte';
 
 	import FootballIcon from './icons/FootballIcon.svelte';
 	import FootballBootIcon from './icons/FootballBootIcon.svelte';
 
-	type Player = Doc<'players'>;
-	type Stats = Doc<'stats'>;
-	type StatsWithOrder = Stats & { order: number; price: number };
+	type Player = FunctionReturnType<typeof api.players.getAll>[number];
+	type StatsWithOrder = Player['stats'][number];
+	type AllTimeStats = {
+		goals: number;
+		assists: number;
+		positions: string[];
+		count: number;
+		totalPrice: number;
+		appearances: number;
+		captains: number;
+	};
 
 	let { player, stats }: { player: Player; stats: StatsWithOrder[] } = $props();
-
-	$inspect(player, stats);
 
 	const parsedStats = $derived(
 		stats.map((s) => {
@@ -54,19 +60,40 @@
 				};
 			},
 			// The initial value for the accumulator
-			{ goals: 0, assists: 0, positions: [], count: 0, totalPrice: 0, appearances: 0, captains: 0 }
+			{
+				goals: 0,
+				assists: 0,
+				positions: [],
+				count: 0,
+				totalPrice: 0,
+				appearances: 0,
+				captains: 0
+			} as AllTimeStats
 		)
 	);
 
-	let containerHeight = 300; // Initial fallback height
+	let containerHeight = $state(300);
 
 	let selectedStatIndex = $state(0);
+	const selectedStat = $derived(stats[selectedStatIndex]);
+	const prices = $derived(stats.filter(({ price, isCaptain }) => price && !isCaptain));
+	const maxPrice = $derived(prices.slice().sort((a, b) => (b.price ?? 0) - (a.price ?? 0))[0]);
+	const minPrice = $derived(prices.slice().sort((a, b) => (a.price ?? 0) - (b.price ?? 0))[0]);
+	const avgPrice = $derived(
+		allTimeStats.count > 0
+			? (Math.round((allTimeStats.totalPrice * 100) / allTimeStats.count) / 100).toFixed(2)
+			: undefined
+	);
 
 	$effect(() => {
 		player._id;
 
 		selectedStatIndex = 0;
 	});
+
+	function statIcons(count: number) {
+		return Array.from({ length: Math.max(0, count) });
+	}
 </script>
 
 <!-- Container with relative positioning and a min-height -->
@@ -90,7 +117,9 @@
 							{/each}
 						</select>
 						{#key selectedStatIndex}
-							<PlayerCard {player} stats={stats[selectedStatIndex]} />
+							{#if selectedStat}
+								<PlayerCard {player} stats={selectedStat} />
+							{/if}
 						{/key}
 					</div>
 					<div class="flex flex-col gap-2">
@@ -98,23 +127,48 @@
 							<div class="text-white text-3xl font-bold">Match Stats</div>
 							<table class="w-full">
 								<tbody>
-									<tr>
-										<td class="text-lg font-medium">Position</td>
-										<td class="w-16">{stats[selectedStatIndex].position}</td>
-									</tr>
-									<tr>
-										<td class="text-lg font-medium">Goals</td>
-										<td>{stats[selectedStatIndex].goals}</td>
-									</tr>
-									<tr>
-										<td class="text-lg font-medium">Assists</td>
-										<td>{stats[selectedStatIndex].assists}</td>
-									</tr>
-									{#if stats[selectedStatIndex].price}
+									{#if selectedStat}
+										<tr>
+											<td class="text-lg font-medium">Position</td>
+											<td class="w-16">{selectedStat.position}</td>
+										</tr>
+										<tr>
+											<td class="text-lg font-medium">Goals</td>
+											<td>
+												<div
+													class="flex flex-wrap items-center gap-1 text-lg"
+													aria-label={`${selectedStat.goals} goals`}
+												>
+													{#each statIcons(selectedStat.goals) as _}
+														<FootballIcon />
+													{/each}
+													{#if selectedStat.goals === 0}
+														<span>-</span>
+													{/if}
+												</div>
+											</td>
+										</tr>
+										<tr>
+											<td class="text-lg font-medium">Assists</td>
+											<td>
+												<div
+													class="flex flex-wrap items-center gap-1 text-lg"
+													aria-label={`${selectedStat.assists} assists`}
+												>
+													{#each statIcons(selectedStat.assists) as _}
+														<FootballBootIcon />
+													{/each}
+													{#if selectedStat.assists === 0}
+														<span>-</span>
+													{/if}
+												</div>
+											</td>
+										</tr>
+									{/if}
+									{#if selectedStat?.price}
 										<tr>
 											<td class="text-lg font-medium">Price</td>
-											<td>£{Math.round((stats[selectedStatIndex].price * 100) / 100).toFixed(2)}</td
-											>
+											<td>£{Math.round((selectedStat.price * 100) / 100).toFixed(2)}</td>
 										</tr>
 									{/if}
 								</tbody>
@@ -140,11 +194,35 @@
 								</tr>
 								<tr>
 									<td class="text-lg font-medium">Goals</td>
-									<td>{allTimeStats.goals}</td>
+									<td>
+										<div
+											class="flex flex-wrap items-center gap-1 text-lg max-w-28"
+											aria-label={`${allTimeStats.goals} goals`}
+										>
+											{#each statIcons(allTimeStats.goals) as _}
+												<FootballIcon />
+											{/each}
+											{#if allTimeStats.goals === 0}
+												<span>-</span>
+											{/if}
+										</div>
+									</td>
 								</tr>
 								<tr>
 									<td class="text-lg font-medium">Assists</td>
-									<td>{allTimeStats.assists}</td>
+									<td>
+										<div
+											class="flex flex-wrap items-center gap-1 text-lg max-w-28"
+											aria-label={`${allTimeStats.assists} assists`}
+										>
+											{#each statIcons(allTimeStats.assists) as _}
+												<FootballBootIcon />
+											{/each}
+											{#if allTimeStats.assists === 0}
+												<span>-</span>
+											{/if}
+										</div>
+									</td>
 								</tr>
 								<tr>
 									<td class="text-lg font-medium">Captaincies</td>
@@ -153,35 +231,19 @@
 								<tr>
 									<td class="text-lg font-medium">Max Price</td>
 									<td
-										>£{Math.round(
-											(stats
-												.slice()
-												.filter(({ price, isCaptain }) => price && !isCaptain)
-												.sort((a, b) => b.price - a.price)[0].price *
-												100) /
-												100
-										).toFixed(2)}</td
+										>{#if maxPrice?.price}£{Math.round(maxPrice.price * 100) / 100}{:else}-{/if}</td
 									>
 								</tr>
 								<tr>
 									<td class="text-lg font-medium">Min Price</td>
 									<td
-										>£{Math.round(
-											(stats
-												.slice()
-												.filter(({ price, isCaptain }) => price && !isCaptain)
-												.sort((a, b) => a.price - b.price)[0].price *
-												100) /
-												100
-										).toFixed(2)}</td
+										>{#if minPrice?.price}£{Math.round(minPrice.price * 100) / 100}{:else}-{/if}</td
 									>
 								</tr>
 								<tr>
 									<td class="text-lg font-medium">Avg Price</td>
 									<td
-										>£{(
-											Math.round((allTimeStats.totalPrice * 100) / allTimeStats.count) / 100
-										).toFixed(2)}</td
+										>{#if avgPrice}£{avgPrice}{:else}-{/if}</td
 									>
 								</tr>
 							</tbody>
@@ -234,8 +296,32 @@
 								{#each stats as { goals, assists, order, _id } (_id)}
 									<tr class="w-full">
 										<td class="text-lg font-medium">Burncastle {order}</td>
-										<td class="w-8 text-center">{goals}</td>
-										<td class="w-8 text-center">{assists}</td>
+										<td class="w-8">
+											<div
+												class="flex flex-wrap justify-center items-center gap-0.5 text-base"
+												aria-label={`${goals} goals`}
+											>
+												{#each statIcons(goals) as _}
+													<FootballIcon />
+												{/each}
+												{#if goals === 0}
+													<span>-</span>
+												{/if}
+											</div>
+										</td>
+										<td class="w-8">
+											<div
+												class="flex flex-wrap justify-center items-center gap-0.5 text-base"
+												aria-label={`${assists} assists`}
+											>
+												{#each statIcons(assists) as _}
+													<FootballBootIcon />
+												{/each}
+												{#if assists === 0}
+													<span>-</span>
+												{/if}
+											</div>
+										</td>
 									</tr>
 								{/each}
 							</tbody>

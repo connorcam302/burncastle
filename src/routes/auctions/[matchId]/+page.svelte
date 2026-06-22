@@ -5,86 +5,89 @@
 	import FootballIcon from '$lib/components/icons/FootballIcon.svelte';
 	import FootballBootIcon from '$lib/components/icons/FootballBootIcon.svelte';
 	import { RectangleEllipsis } from '@lucide/svelte';
+	import type { Id } from '../../../convex/_generated/dataModel';
 
 	let { data } = $props();
 	const client = useConvexClient();
 
-	let { matchId } = data;
+	let matchId = data.matchId as Id<'matches'>;
 
 	let auction = $derived(useQuery(api.auctions.get, { matchId }));
 	let allPlayers = $derived(useQuery(api.players.getAll, {}));
+	let match = $derived(auction.data);
+	let playersList = $derived(allPlayers.data ?? []);
+	let auctionState = $derived(match?.auction);
+	let teamOne = $derived(match?.teams[0]);
+	let teamTwo = $derived(match?.teams[1]);
 
 	let showKeyPrompt = $state(false);
 	let enteredKey = $state('');
 	let keyError = $state('');
 
 	const checkKey = () => {
-		if (allPlayers.data.find((p) => p._id === enteredKey)) {
-			localStorage.setItem('userId', enteredKey);
+		const player = playersList.find((p) => p._id === enteredKey);
+		if (player) {
+			localStorage.setItem('userId', player._id);
 			showKeyPrompt = false;
-			userId = enteredKey;
+			userId = player._id;
 		} else {
 			keyError = 'Invalid Key';
 			setTimeout(() => (keyError = ''), 1500);
 		}
 	};
 
-	let userId = $state(localStorage.getItem('userId'));
+	let userId = $state(localStorage.getItem('userId') as Id<'players'> | null);
 
-	const getPermissions = (userId: string) => {
-		if (
-			userId === auction.data?.teams[0].captainId ||
-			userId === auction.data?.teams[1].captainId
-		) {
+	const getPermissions = (userId: Id<'players'>) => {
+		if (userId === teamOne?.captainId || userId === teamTwo?.captainId) {
 			return 'captain';
 		}
-		if (auction?.data?.auction?.auctioneers?.includes(userId)) {
+		if (auctionState?.auctioneers?.includes(userId)) {
 			return 'auctioneer';
 		}
 	};
 
 	let permissions = $derived(userId && getPermissions(userId));
 
-	let winningBids = $derived(auction.data?.bids?.filter((b) => b.winningBid === true));
+	let winningBids = $derived(match?.bids.filter((b) => b.winningBid === true) ?? []);
 
 	let bidsOnSelectedPlayer = $derived(
-		auction?.data &&
-			auction?.data?.auction?.displayedPlayerId &&
-			useQuery(api.bids.getOnePlayer, { playerId: auction.data.auction.displayedPlayerId, matchId })
+		auctionState?.displayedPlayerId &&
+			useQuery(api.bids.getOnePlayer, { playerId: auctionState.displayedPlayerId, matchId })
 	);
+	let selectedPlayerBids = $derived(bidsOnSelectedPlayer?.data ?? []);
+	let topBid = $derived(selectedPlayerBids[0]);
 
-	let newBidAmountRaw = $state(0);
-	let newBidAmount = $derived(parseInt(Number(newBidAmountRaw)));
+	let newBidAmountRaw = $state('0');
+	let newBidAmount = $derived(parseInt(newBidAmountRaw, 10) || 0);
 
 	const submitBid = () => {
-		if (
-			newBidAmount < 0 ||
-			(bidsOnSelectedPlayer?.data.length > 0 &&
-				!(bidsOnSelectedPlayer?.data[0]?.amount < newBidAmount))
-		) {
+		if (!userId || !auctionState?.displayedPlayerId || !match || !teamOne || !teamTwo) return;
+
+		if (newBidAmount <= 0 || (topBid && topBid.amount >= newBidAmount)) {
 			alert('Bid must be greater than 0 and greater than the current bid');
 			return;
 		}
 
 		// check if the player has enough funds
 		// team 1 scenario
-		if (auction.data.teams[0].captainId === userId) {
+		if (teamOne.captainId === userId) {
 			if (newBidAmount + teamOneSpend > startingAmount) {
 				alert('You do not have enough funds to bid this amount');
 				return;
 			}
 
-			if (auction.data.teams[0].playerIds.length === auction.data.participants.length / 2) {
+			if (teamOne.playerIds.length === match.participants.length / 2) {
 				alert('Your team is full');
 				return;
 			}
 		}
-		if (auction.data.teams[1].captainId === userId) {
+		if (teamTwo.captainId === userId) {
 			if (newBidAmount + teamTwoSpend > startingAmount) {
 				alert('You do not have enough funds to bid this amount');
 				return;
 			}
-			if (auction.data.teams[1].playerIds.length === auction.data.participants.length / 2) {
+			if (teamTwo.playerIds.length === match.participants.length / 2) {
 				alert('Your team is full');
 				return;
 			}
@@ -93,97 +96,113 @@
 		client.mutation(api.bids.newBid, {
 			matchId,
 			amount: newBidAmount,
-			playerId: auction?.data?.auction?.displayedPlayerId,
+			playerId: auctionState.displayedPlayerId,
 			bidderId: userId
 		});
 	};
 
-	$inspect(bidsOnSelectedPlayer);
-
-	let startingAmount = $derived((auction.data?.participants?.length - 2) * 25);
+	let startingAmount = $derived(match ? (match.participants.length - 2) * 25 : 0);
 	let teamOneSpend = $derived(
-		winningBids &&
-			winningBids
-				.filter((b) => b.bidderId === auction.data.teams[0].captainId)
-				.reduce((acc, b) => acc + b.amount, 0)
+		teamOne
+			? winningBids.filter((b) => b.bidderId === teamOne.captainId).reduce((acc, b) => acc + b.amount, 0)
+			: 0
 	);
 
 	let teamTwoSpend = $derived(
-		winningBids &&
-			winningBids
-				.filter((b) => b.bidderId === auction.data.teams[1].captainId)
-				.reduce((acc, b) => acc + b.amount, 0)
+		teamTwo
+			? winningBids.filter((b) => b.bidderId === teamTwo.captainId).reduce((acc, b) => acc + b.amount, 0)
+			: 0
 	);
 
 	let remainingPlayers = $derived(
-		allPlayers.data &&
-			auction.data &&
-			auction.data.participants
+		match && teamOne && teamTwo
+			? match.participants
 				.filter(
 					(p) =>
 						![
-							...auction.data.teams[0].playerIds,
-							...auction.data.teams[1].playerIds,
-							auction.data.auction.displayedPlayerId
+							...teamOne.playerIds,
+							...teamTwo.playerIds,
+							auctionState?.displayedPlayerId
 						].includes(p)
 				)
 				.sort((a, b) => {
-					const playerA = allPlayers.data.find((p) => p._id === a);
-					const playerB = allPlayers.data.find((p) => p._id === b);
-					return playerA.stats[0].rating < playerB.stats[0].rating ? 1 : -1;
+					return getPlayerRating(b) - getPlayerRating(a);
 				})
+			: []
 	);
 
-	let auctioneerSelectedPlayerId = $derived(auction.data && auction.data.participants[0]);
-	let auctioneerSelectedPlayer = $derived(
-		auctioneerSelectedPlayerId && allPlayers.data.find((p) => p._id === auctioneerSelectedPlayerId)
+	let auctioneerSelectedPlayerId = $state<Id<'players'> | undefined>();
+	let displayedPlayer = $derived(
+		auctionState?.displayedPlayerId
+			? playersList.find((p) => p._id === auctionState.displayedPlayerId)
+			: undefined
 	);
+
+	$effect(() => {
+		if (!auctioneerSelectedPlayerId && match?.participants[0]) {
+			auctioneerSelectedPlayerId = match.participants[0];
+		}
+	});
+
+	const getPlayer = (playerId: Id<'players'>) => playersList.find((p) => p._id === playerId);
+	const getPlayerRating = (playerId: Id<'players'>) => getPlayer(playerId)?.stats[0]?.rating ?? 0;
+	const getPlayerPrice = (playerId: Id<'players'>) =>
+		winningBids.find((bid) => bid.playerId === playerId)?.amount ?? 0;
+	const getPreviousPrice = (playerId: Id<'players'>) => {
+		const player = getPlayer(playerId);
+		if (!player || !match) return 0;
+		const currentIndex = player.stats.findIndex((stat) => stat.order === match.order);
+		return player.stats[currentIndex + 1]?.price ?? 0;
+	};
 
 	const updateDisplayedPlayer = () => {
-		console.log(auctioneerSelectedPlayerId, auction.data._id);
+		if (!auctionState || !auctioneerSelectedPlayerId) return;
 		client.mutation(api.auctions.setDisplayedPlayer, {
-			auctionId: auction.data?.auction?._id,
+			auctionId: auctionState._id,
 			playerId: auctioneerSelectedPlayerId
 		});
 	};
 
 	const markBidAsWinner = () => {
+		if (!topBid) return;
 		client.mutation(api.bids.markWinningBid, {
-			bidId: bidsOnSelectedPlayer?.data[0]?._id
+			bidId: topBid._id
 		});
 	};
 
 	const unmarkBidAsWinner = () => {
+		if (!topBid) return;
 		client.mutation(api.bids.unmarkWinningBid, {
-			bidId: bidsOnSelectedPlayer?.data[0]?._id
+			bidId: topBid._id
 		});
 	};
 
 	const clearDisplayedPlayer = () => {
+		if (!auctionState) return;
 		client.mutation(api.auctions.setDisplayedPlayer, {
-			auctionId: auction.data?.auction?._id,
+			auctionId: auctionState._id,
 			playerId: null
 		});
 	};
 
 	const closeAuction = () => {
+		if (!auctionState) return;
 		client.mutation(api.auctions.setAuction, {
-			auctionId: auction.data?.auction?._id,
+			auctionId: auctionState._id,
 			live: false
 		});
 	};
 
 	const openAuction = () => {
+		if (!auctionState) return;
 		client.mutation(api.auctions.setAuction, {
-			auctionId: auction.data?.auction?._id,
+			auctionId: auctionState._id,
 			live: true
 		});
 	};
-
-	$inspect(auction, allPlayers, winningBids, remainingPlayers);
 </script>
 
-{#if auction.data !== undefined && !auction.isLoading && allPlayers.data !== undefined && !allPlayers.isLoading}
+{#if match && auctionState && teamOne && teamTwo && !auction.isLoading && !allPlayers.isLoading}
 	{#if permissions === 'auctioneer'}
 		<div
 			class="w-full bg-gradient-to-r from-[#0a0e13]/95 border-0 to-[#1e2c3a]/95 text-white p-4 flex flex-col gap-4 mb-4 relative"
@@ -195,8 +214,8 @@
 						class="bg-zinc-700 text-white outline-none ring-0 border-0 w-full"
 						bind:value={auctioneerSelectedPlayerId}
 					>
-						{#each auction.data.participants as player (player)}
-							<option value={player}>{allPlayers.data.find((p) => p._id === player).name}</option>
+						{#each match.participants as player (player)}
+							<option value={player}>{getPlayer(player)?.name ?? 'Unknown player'}</option>
 						{/each}
 					</select>
 					<button
@@ -255,8 +274,9 @@
 		/>
 		{#if showKeyPrompt}
 			<div class="absolute top-16 right-4 bg-zinc-800 p-4 rounded-lg shadow-lg w-64">
-				<label class="block mb-2 text-sm font-medium">Enter Access Key</label>
+				<label for="access-key" class="block mb-2 text-sm font-medium">Enter Access Key</label>
 				<input
+					id="access-key"
 					type="password"
 					bind:value={enteredKey}
 					class="w-full px-2 py-1 bg-zinc-700 text-white border border-zinc-600 rounded focus:outline-none"
@@ -275,22 +295,22 @@
 				</div>
 			</div>
 		{/if}
-		<div class="text-center font-medium text-4xl">Burncastle {auction.data.order} Auction</div>
+		<div class="text-center font-medium text-4xl">Burncastle {match.order} Auction</div>
 		<div class="flex w-full gap-4 min-h-96">
 			<div class="flex flex-col gap-4 items-center grow">
 				<div class="flex flex-col gap-4 w-full items-center">
-					<div class="text-center font-medium text-4xl">{auction.data.teams[0].name}</div>
+					<div class="text-center font-medium text-4xl">{teamOne.name}</div>
 					<img
-						src={`/players/${auction.data.teams[0].captain?.nameId}.png`}
-						alt={auction.data.teams[0].name}
+						src={`/players/${teamOne.captain?.nameId}.png`}
+						alt={teamOne.name}
 						class="md:w-32 md:h-32 w-16 h-16"
 					/>
 					<div class="text-center font-medium text-4xl flex items-center gap-2">
 						<div>£{startingAmount - teamOneSpend}</div>
-						{#if bidsOnSelectedPlayer?.data?.length !== 0 && bidsOnSelectedPlayer?.data && !bidsOnSelectedPlayer?.data[0].winningBid}
-							{#if bidsOnSelectedPlayer?.data[0]?.bidderId === auction?.data?.teams[0]?.captain?._id}
+						{#if topBid && !topBid.winningBid}
+							{#if topBid.bidderId === teamOne.captain?._id}
 								<div class="font-normal text-2xl">
-									(£{startingAmount - teamOneSpend - bidsOnSelectedPlayer?.data[0]?.amount})
+									(£{startingAmount - teamOneSpend - topBid.amount})
 								</div>
 							{/if}
 						{/if}
@@ -299,40 +319,35 @@
 				<div class="flex flex-col gap-4 w-full items-center justify-center">
 					<table class="w-full">
 						<thead>
-							{#each auction.data.teams[0].playerIds
+							{#each teamOne.playerIds
 								.slice()
-								.filter((p) => p !== auction.data.teams[0].captainId)
-								.sort((a, b) => {
-									const playerA = allPlayers.data.find((p) => p._id === a);
-									const playerB = allPlayers.data.find((p) => p._id === b);
-									return playerA.stats[0].rating < playerB.stats[0].rating ? 1 : -1;
-								}) as player (player)}
-								{@const playerData = allPlayers.data.find((p) => p._id === player)}
-								{@const price = winningBids.find((b) => b.playerId === player)?.amount ?? 0}
-								{@const previousPrice =
-									playerData.stats[
-										playerData.stats.findIndex((s) => s.order === auction.data.order) + 1
-									]?.price ?? 0}
-								<tr>
-									<td class="md:w-16 md:h-16 w-16 h-16">
-										<img
-											src={`/players/${playerData.nameId}.png`}
-											alt={playerData.name}
-											class="md:w-16 md:h-16 w-16 h-16"
-										/>
-									</td>
-									<td class="text-left px-2 text-2xl">{playerData.name}</td>
-									<td class="text-center font-medium text-2xl w-16">£{price}</td>
-									<td class="text-center font-medium text-lg w-24">
-										{#if previousPrice}
-											{#if previousPrice > price}
-												<span class="text-green-500">(- £{previousPrice - price})</span>
-											{:else}
-												<span class="text-red-500">(+ £{price - previousPrice})</span>
+								.filter((p) => p !== teamOne.captainId)
+								.sort((a, b) => getPlayerRating(b) - getPlayerRating(a)) as player (player)}
+								{@const playerData = getPlayer(player)}
+								{@const price = getPlayerPrice(player)}
+								{@const previousPrice = getPreviousPrice(player)}
+								{#if playerData}
+									<tr>
+										<td class="md:w-16 md:h-16 w-16 h-16">
+											<img
+												src={`/players/${playerData.nameId}.png`}
+												alt={playerData.name}
+												class="md:w-16 md:h-16 w-16 h-16"
+											/>
+										</td>
+										<td class="text-left px-2 text-2xl">{playerData.name}</td>
+										<td class="text-center font-medium text-2xl w-16">£{price}</td>
+										<td class="text-center font-medium text-lg w-24">
+											{#if previousPrice}
+												{#if previousPrice > price}
+													<span class="text-green-500">(- £{previousPrice - price})</span>
+												{:else}
+													<span class="text-red-500">(+ £{price - previousPrice})</span>
+												{/if}
 											{/if}
-										{/if}
-									</td>
-								</tr>
+										</td>
+									</tr>
+								{/if}
 							{/each}
 						</thead>
 					</table>
@@ -340,21 +355,18 @@
 			</div>
 			<div class="flex flex-col gap-4 items-center w-96 bg-black/15 py-4">
 				<div class=" mx-auto my-auto">
-					{#if !auction.data.auction.live}
+					{#if !auctionState.live}
 						<span class="font-medium text-3xl">Auction Closed</span>
-					{:else if !auction.data.auction.displayedPlayerId}
+					{:else if !auctionState.displayedPlayerId}
 						<div class="flex flex-col gap-4 items-center">
 							<span class="font-medium text-3xl">Auction Live</span>
 							<span class="text-lg">Please wait for a player to be selected</span>
 						</div>
-					{:else if auction.data.auction.displayedPlayerId}
-						{@const displayedPlayer = allPlayers.data.find(
-							(p) => p._id === auction.data.auction.displayedPlayerId
-						)}
+					{:else if displayedPlayer && displayedPlayer.stats[0]}
 						<div class="flex flex-col gap-4 items-center">
 							<div class="relative">
 								<PlayerCard player={displayedPlayer} stats={displayedPlayer.stats[0]} />
-								{#if bidsOnSelectedPlayer?.data && bidsOnSelectedPlayer?.data[0]?.winningBid}
+								{#if topBid?.winningBid}
 									<div
 										class="absolute top-0 right-0 left-0 bottom-0 flex gap-2 items-center justify-center rotate-[315deg] text-red-500 font-bold text-7xl"
 									>
@@ -384,14 +396,12 @@
 							{/if}
 							<div class="flex flex-col gap-2 items-center">
 								<div class="font-medium text-3xl">Current Bid</div>
-								{#if bidsOnSelectedPlayer?.data?.length === 0}
+								{#if selectedPlayerBids.length === 0}
 									<div class="text-white text-3xl">No bids</div>
-								{:else if bidsOnSelectedPlayer?.data?.length > 0}
-									{@const highestBidder = allPlayers.data.find(
-										(p) => p._id === bidsOnSelectedPlayer?.data[0]?.bidderId
-									)}
+								{:else if topBid}
+									{@const highestBidder = getPlayer(topBid.bidderId)}
 									<div class="text-white text-3xl font-medium flex items-center gap-2">
-										£{bidsOnSelectedPlayer?.data[0]?.amount}
+										£{topBid.amount}
 										<span class="font-normal text-2xl">- {highestBidder?.name}</span>
 									</div>
 								{/if}
@@ -434,18 +444,18 @@
 			</div>
 			<div class="flex flex-col gap-4 items-center grow">
 				<div class="flex flex-col gap-4 w-full items-center">
-					<div class="text-center font-medium text-4xl">{auction.data.teams[1].name}</div>
+					<div class="text-center font-medium text-4xl">{teamTwo.name}</div>
 					<img
-						src={`/players/${auction.data.teams[1].captain?.nameId}.png`}
-						alt={auction.data.teams[1].name}
+						src={`/players/${teamTwo.captain?.nameId}.png`}
+						alt={teamTwo.name}
 						class="md:w-32 md:h-32 w-16 h-16"
 					/>
 					<div class="text-center font-medium text-4xl flex items-center gap-2">
 						<div>£{startingAmount - teamTwoSpend}</div>
-						{#if bidsOnSelectedPlayer?.data?.length !== 0 && bidsOnSelectedPlayer?.data && !bidsOnSelectedPlayer?.data[0].winningBid}
-							{#if bidsOnSelectedPlayer?.data[0]?.bidderId === auction?.data?.teams[1]?.captain?._id}
+						{#if topBid && !topBid.winningBid}
+							{#if topBid.bidderId === teamTwo.captain?._id}
 								<div class="font-normal text-2xl">
-									(£{startingAmount - teamTwoSpend - bidsOnSelectedPlayer?.data[0]?.amount})
+									(£{startingAmount - teamTwoSpend - topBid.amount})
 								</div>
 							{/if}
 						{/if}
@@ -454,40 +464,37 @@
 				<div class="flex flex-col gap-4 w-full items-center justify-center">
 					<table class="w-full">
 						<tbody>
-							{#each auction.data.teams[1].playerIds
+							{#each teamTwo.playerIds
 								.slice()
-								.filter((p) => p !== auction.data.teams[1].captainId)
+								.filter((p) => p !== teamTwo.captainId)
 								.sort((a, b) => {
-									const playerA = winningBids.find((p) => p.playerId === a) ?? { amount: 0 };
-									const playerB = winningBids.find((p) => p.playerId === b) ?? { amount: 0 };
-									return playerA.amount < playerB.amount ? 1 : -1;
+									return getPlayerPrice(b) - getPlayerPrice(a);
 								}) as player (player)}
-								{@const playerData = allPlayers.data.find((p) => p._id === player)}
-								{@const price = winningBids.find((b) => b.playerId === player)?.amount ?? 0}
-								{@const previousPrice =
-									playerData.stats[
-										playerData.stats.findIndex((s) => s.order === auction.data.order) + 1
-									]?.price ?? 0}
-								<tr>
-									<td class="text-center font-medium text-lg w-24">
-										{#if previousPrice}
-											{#if previousPrice > price}
-												<span class="text-green-500">(- £{previousPrice - price})</span>
-											{:else}
-												<span class="text-red-500">(+ £{price - previousPrice})</span>
+								{@const playerData = getPlayer(player)}
+								{@const price = getPlayerPrice(player)}
+								{@const previousPrice = getPreviousPrice(player)}
+								{#if playerData}
+									<tr>
+										<td class="text-center font-medium text-lg w-24">
+											{#if previousPrice}
+												{#if previousPrice > price}
+													<span class="text-green-500">(- £{previousPrice - price})</span>
+												{:else}
+													<span class="text-red-500">(+ £{price - previousPrice})</span>
+												{/if}
 											{/if}
-										{/if}
-									</td>
-									<td class="text-center font-medium text-2xl w-16">£{price}</td>
-									<td class="text-right px-2 text-2xl">{playerData.name}</td>
-									<td class="md:w-16 md:h-16 w-16 h-16">
-										<img
-											src={`/players/${playerData.nameId}.png`}
-											alt={playerData.name}
-											class="md:w-16 md:h-16 w-16 h-16"
-										/>
-									</td>
-								</tr>
+										</td>
+										<td class="text-center font-medium text-2xl w-16">£{price}</td>
+										<td class="text-right px-2 text-2xl">{playerData.name}</td>
+										<td class="md:w-16 md:h-16 w-16 h-16">
+											<img
+												src={`/players/${playerData.nameId}.png`}
+												alt={playerData.name}
+												class="md:w-16 md:h-16 w-16 h-16"
+											/>
+										</td>
+									</tr>
+								{/if}
 							{/each}
 						</tbody>
 					</table>
@@ -498,8 +505,10 @@
 			<div class="text-3xl font-medium text-center">Remaining Players</div>
 			<div class="flex w-full flex-wrap gap-4 items-center justify-center">
 				{#each remainingPlayers as player (player)}
-					{@const playerData = allPlayers.data.find((p) => p._id === player)}
-					<PlayerCard player={playerData} stats={playerData.stats[0]} />
+					{@const playerData = getPlayer(player)}
+					{#if playerData && playerData.stats[0]}
+						<PlayerCard player={playerData} stats={playerData.stats[0]} />
+					{/if}
 				{/each}
 			</div>
 		{/if}

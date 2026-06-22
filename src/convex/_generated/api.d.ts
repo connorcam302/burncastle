@@ -15,6 +15,7 @@ import type {
 } from "convex/server";
 import type * as auctions from "../auctions.js";
 import type * as bids from "../bids.js";
+import type * as matches from "../matches.js";
 import type * as players from "../players.js";
 
 /**
@@ -28,6 +29,7 @@ import type * as players from "../players.js";
 declare const fullApi: ApiFromModules<{
   auctions: typeof auctions;
   bids: typeof bids;
+  matches: typeof matches;
   players: typeof players;
 }>;
 export declare const api: FilterApi<

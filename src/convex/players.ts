@@ -16,34 +16,57 @@ export const getAll = query({
 				const matchesWithStats = await Promise.all(
 					allMatches.map(async (match) => {
 						const stats = allStats.find((s) => s.matchId === match._id);
-						const winningBid = await ctx.db
-							.query('bids')
-							.withIndex('matchId_playerId_winningBid', (q) =>
-								q.eq('matchId', match._id).eq('playerId', player._id).eq('winningBid', true)
-							)
-							.first();
+						const [winningBid, goalEvents, assistEvents] = await Promise.all([
+							ctx.db
+								.query('bids')
+								.withIndex('matchId_playerId_winningBid', (q) =>
+									q.eq('matchId', match._id).eq('playerId', player._id).eq('winningBid', true)
+								)
+								.first(),
+							ctx.db
+								.query('matchEvents')
+								.withIndex('playerId', (q) => q.eq('playerId', player._id))
+								.filter((q) => q.eq(q.field('matchId'), match._id))
+								.collect(),
+							ctx.db
+								.query('matchEvents')
+								.withIndex('assistPlayerId', (q) => q.eq('assistPlayerId', player._id))
+								.filter((q) => q.eq(q.field('matchId'), match._id))
+								.collect()
+						]);
 
-						return { ...match, stats, price: winningBid?.amount };
+						return {
+							...match,
+							stats,
+							eventGoals: goalEvents.filter((event) => event.type === 'goal').length,
+							eventAssists: assistEvents.filter((event) => event.type === 'goal').length,
+							price: winningBid?.amount
+						};
 					})
-				).then((matches) =>
-					matches.sort((a, b) => b.order - a.order).filter((m) => m.stats !== undefined)
 				);
-
-				if (matchesWithStats.length === 0) {
-					return player;
-				}
 
 				return {
 					...player,
-					stats: matchesWithStats.map((m) => {
-						return { order: m.order, ...m.stats, price: m.price };
-					})
+					stats: matchesWithStats
+						.flatMap((match) =>
+							match.stats === undefined
+								? []
+								: [
+										{
+											...match.stats,
+											goals: match.eventGoals || match.stats.goals,
+											assists: match.eventAssists || match.stats.assists,
+											order: match.order,
+											price: match.price
+										}
+									]
+						)
+						.sort((a, b) => b.order - a.order)
 				};
 			})
 		);
 
-		// @ts-expect-error stat unknown
-		return allPlayersWithStats.sort((a, b) => b.stats[0]?.rating - a.stats[0]?.rating);
+		return allPlayersWithStats.sort((a, b) => (b.stats[0]?.rating ?? 0) - (a.stats[0]?.rating ?? 0));
 	}
 });
 

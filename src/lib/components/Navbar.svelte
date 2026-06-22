@@ -1,12 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 
-	let active = 'HOME';
 	const menuItems = ['', 'matches', 'auctions', 'players', 'gallery'];
-
-	function setActive(item) {
-		active = item;
-	}
 </script>
 
 <nav

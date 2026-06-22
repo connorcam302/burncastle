@@ -6,19 +6,33 @@
 	import { CircleX, Search } from '@lucide/svelte';
 	let players = $derived(useQuery(api.players.getAll, {}));
 	let hoveredIndex = $state(-1);
-	$inspect(players);
 
 	let playerSearchString = $state('');
 
 	let displayedPlayers = $derived(
-		players?.data?.filter((p) => p.name.toLowerCase().includes(playerSearchString.toLowerCase()))
+		(players.data ?? []).filter((p) =>
+			p.name.toLowerCase().includes(playerSearchString.toLowerCase())
+		)
 	);
 
-	let selectedPlayer = $derived(players?.data?.[players?.data?.length - 1]);
+	let selectedPlayer = $state<NonNullable<typeof players.data>[number] | undefined>();
+
+	$effect(() => {
+		if (!selectedPlayer && players.data) {
+			selectedPlayer = players.data.find((player) => player.stats.length > 0);
+		}
+	});
+
+	const selectHoveredPlayer = () => {
+		const player = displayedPlayers[hoveredIndex];
+		if (player?.stats.length) {
+			selectedPlayer = player;
+		}
+	};
 </script>
 
 <div class="flex justify-center flex-col gap-4 w-full">
-	{#if selectedPlayer}
+	{#if selectedPlayer && selectedPlayer.stats.length > 0}
 		<PlayerView player={selectedPlayer} stats={selectedPlayer.stats} />
 	{/if}
 	<div
@@ -40,16 +54,17 @@
 			aria-hidden="true"
 			class="card-row justify-center items-center h-64 w-full overflow-hidden hidden md:flex"
 			onmouseleave={() => (hoveredIndex = -1)}
-			onclick={() => (selectedPlayer = displayedPlayers[hoveredIndex])}
+			onclick={selectHoveredPlayer}
 		>
 			{#each displayedPlayers as player, index (player._id)}
-				<div
-					aria-hidden="true"
-					class="card-wrapper relative transition-all duration-300 ease-out cursor-pointer"
-					style="
+				{#if player.stats.length > 0}
+					<div
+						aria-hidden="true"
+						class="card-wrapper relative transition-all duration-300 ease-out cursor-pointer"
+						style="
 					margin-left: {index === 0 ? '0' : '-120px'};
 					transform: translateX({hoveredIndex >= 0
-						? index < hoveredIndex
+							? index < hoveredIndex
 							? -130
 							: index > hoveredIndex
 								? 130
@@ -57,20 +72,23 @@
 						: 0}px);
 					z-index: {hoveredIndex === index ? 999 : 100 + index};
 				"
-					onmouseenter={() => (hoveredIndex = index)}
-				>
-					<PlayerCard {player} stats={player.stats[0]} />
-				</div>
+						onmouseenter={() => (hoveredIndex = index)}
+					>
+						<PlayerCard {player} stats={player.stats[0]} />
+					</div>
+				{/if}
 			{/each}
 		</button>
 		<button
 			class="flex flex-wrap gap-2 md:hidden items-center justify-center"
-			onclick={() => (selectedPlayer = displayedPlayers[hoveredIndex])}
+			onclick={selectHoveredPlayer}
 		>
 			{#each displayedPlayers as player, index (player._id)}
-				<div>
-					<PlayerCard {player} stats={player.stats[0]} />
-				</div>
+				{#if player.stats.length > 0}
+					<div>
+						<PlayerCard {player} stats={player.stats[0]} />
+					</div>
+				{/if}
 			{/each}
 		</button>
 	{/if}

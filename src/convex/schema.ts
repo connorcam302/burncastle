@@ -44,10 +44,26 @@ export default defineSchema({
 		rating: v.number(),
 		position: v.string(),
 		breakdown: v.string()
-	}).index('playerId', ['playerId']),
+	})
+		.index('playerId', ['playerId'])
+		.index('matchId', ['matchId'])
+		.index('playerId_matchId', ['playerId', 'matchId']),
+
+	matchEvents: defineTable({
+		matchId: v.id('matches'),
+		teamId: v.optional(v.id('teams')),
+		playerId: v.optional(v.id('players')),
+		assistPlayerId: v.optional(v.id('players')),
+		type: v.string(),
+		minute: v.number(),
+		note: v.optional(v.string())
+	})
+		.index('matchId', ['matchId'])
+		.index('playerId', ['playerId'])
+		.index('assistPlayerId', ['assistPlayerId']),
 
 	bids: defineTable({
-		matchId: v.string(),
+		matchId: v.id('matches'),
 		playerId: v.id('players'),
 		bidderId: v.id('players'),
 		winningBid: v.boolean(),
