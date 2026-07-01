@@ -14,16 +14,18 @@
 	<link rel="icon" href={favicon} />
 </svelte:head>
 
-<div class="flex items-center justify-center my-8">
-	<div class="h-full w-full">
-		<div class="flex flex-col items-center justify-center gap-8 max-w-6xl mx-auto h-full uppercase">
-			<div class="flex gap-2 mr-auto items-center">
-				<img src="/logo.png" alt="logo" class="md:w-24 md:h-24 w-16 h-16" />
-				<div class="font-bold text-4xl md:text-8xl">
+<div class="flex min-h-svh min-w-0 items-start justify-center px-3 py-4 sm:px-5 md:py-8">
+	<div class="min-w-0 w-full">
+		<div
+			class="mx-auto flex h-full min-w-0 max-w-6xl flex-col items-center justify-center gap-4 uppercase md:gap-8"
+		>
+			<div class="mr-auto flex min-w-0 items-center gap-2">
+				<img src="/logo.png" alt="logo" class="h-14 w-14 shrink-0 md:h-24 md:w-24" />
+				<div class="min-w-0 text-[clamp(1.75rem,8.4vw,4rem)] font-bold leading-none md:text-8xl">
 					<span class="text-burnley">BURN</span><span class="text-white">CASTLE</span>
 				</div>
 			</div>
-			<div class="hidden md:block md:w-full">
+			<div class="min-w-0 w-full">
 				<Navbar />
 			</div>
 			{@render children?.()}

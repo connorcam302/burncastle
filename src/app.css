@@ -134,6 +134,30 @@ html {
 	background-size: cover; /* Scales to cover entire container, may crop horizontally */
 	background-position: center;
 	background-repeat: no-repeat;
-	height: 100vh;
+	min-height: 100%;
 	background-attachment: fixed;
+}
+
+body {
+	min-width: 320px;
+	overflow-x: hidden;
+}
+
+button,
+a,
+input,
+select {
+	touch-action: manipulation;
+}
+
+img {
+	max-width: 100%;
+	height: auto;
+}
+
+@media (max-width: 767px) {
+	html {
+		background-attachment: scroll;
+		background-position: center top;
+	}
 }

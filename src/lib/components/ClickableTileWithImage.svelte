@@ -15,7 +15,7 @@
 <button
 	class={cn(
 		className,
-		'group relative overflow-hidden border-2 border-[#2b3b4f] hover:border-sky-800 hover:cursor-pointer text-zinc-300 hover:text-white transition-colors duration-400'
+		'group relative min-h-52 overflow-hidden border-2 border-[#2b3b4f] text-zinc-300 transition-colors duration-400 hover:cursor-pointer hover:border-sky-800 hover:text-white sm:min-h-64'
 	)}
 	onclick={onClick}
 	style="background-image: url('{image}'); background-size: cover; background-position: center;"
@@ -33,9 +33,9 @@
 	></div>
 
 	<!-- Content -->
-	<div class="relative p-4 h-full w-full text-left flex flex-col gap-2">
+	<div class="relative flex h-full w-full flex-col gap-2 p-4 text-left sm:p-5">
 		<div
-			class="font-bold text-6xl text-white group-hover:text-highlight transition-colors duration-300 capitalize"
+			class="text-[clamp(2.25rem,12vw,3.75rem)] font-bold leading-none text-white capitalize transition-colors duration-300 group-hover:text-highlight"
 		>
 			{title}
 		</div>

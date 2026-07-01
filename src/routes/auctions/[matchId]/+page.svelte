@@ -104,30 +104,34 @@
 	let startingAmount = $derived(match ? (match.participants.length - 2) * 25 : 0);
 	let teamOneSpend = $derived(
 		teamOne
-			? winningBids.filter((b) => b.bidderId === teamOne.captainId).reduce((acc, b) => acc + b.amount, 0)
+			? winningBids
+					.filter((b) => b.bidderId === teamOne.captainId)
+					.reduce((acc, b) => acc + b.amount, 0)
 			: 0
 	);
 
 	let teamTwoSpend = $derived(
 		teamTwo
-			? winningBids.filter((b) => b.bidderId === teamTwo.captainId).reduce((acc, b) => acc + b.amount, 0)
+			? winningBids
+					.filter((b) => b.bidderId === teamTwo.captainId)
+					.reduce((acc, b) => acc + b.amount, 0)
 			: 0
 	);
 
 	let remainingPlayers = $derived(
 		match && teamOne && teamTwo
 			? match.participants
-				.filter(
-					(p) =>
-						![
-							...teamOne.playerIds,
-							...teamTwo.playerIds,
-							auctionState?.displayedPlayerId
-						].includes(p)
-				)
-				.sort((a, b) => {
-					return getPlayerRating(b) - getPlayerRating(a);
-				})
+					.filter(
+						(p) =>
+							![
+								...teamOne.playerIds,
+								...teamTwo.playerIds,
+								auctionState?.displayedPlayerId
+							].includes(p)
+					)
+					.sort((a, b) => {
+						return getPlayerRating(b) - getPlayerRating(a);
+					})
 			: []
 	);
 
@@ -205,13 +209,13 @@
 {#if match && auctionState && teamOne && teamTwo && !auction.isLoading && !allPlayers.isLoading}
 	{#if permissions === 'auctioneer'}
 		<div
-			class="w-full bg-gradient-to-r from-[#0a0e13]/95 border-0 to-[#1e2c3a]/95 text-white p-4 flex flex-col gap-4 mb-4 relative"
+			class="relative mb-4 flex w-full flex-col gap-4 bg-gradient-to-r from-[#0a0e13]/95 to-[#1e2c3a]/95 p-3 text-white sm:p-4"
 		>
-			<div class="flex justify-center gap-32">
-				<div class="flex flex-col gap-4">
+			<div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+				<div class="flex flex-col gap-3">
 					<div class="text-center font-medium text-xl">Displayed Player</div>
 					<select
-						class="bg-zinc-700 text-white outline-none ring-0 border-0 w-full"
+						class="min-h-11 w-full border-0 bg-zinc-700 text-white outline-none ring-0"
 						bind:value={auctioneerSelectedPlayerId}
 					>
 						{#each match.participants as player (player)}
@@ -220,42 +224,42 @@
 					</select>
 					<button
 						class="transition-all duration-300 bg-zinc-900 border-zinc-700 border-2 hover:bg-zinc-700
-					px-4 uppercase cursor-pointer p-2 w-full"
+					min-h-11 px-4 uppercase cursor-pointer p-2 w-full"
 						onclick={updateDisplayedPlayer}
 					>
 						Set Displayed Player
 					</button>
 					<button
 						class="transition-all duration-300 bg-red-900 border-zinc-700 border-2 hover:bg-red-700
-					px-4 uppercase cursor-pointer p-2 w-full"
+					min-h-11 px-4 uppercase cursor-pointer p-2 w-full"
 						onclick={clearDisplayedPlayer}
 					>
 						Clear Displayed Player
 					</button>
 				</div>
-				<div class="flex flex-col gap-4">
+				<div class="flex flex-col gap-3">
 					<div class="text-center font-medium text-xl">Current Bid</div>
 					<button
 						class="transition-all duration-300 bg-green-900 border-zinc-700 border-2 hover:bg-green-700
-					px-4 uppercase cursor-pointer p-2 w-full"
+					min-h-11 px-4 uppercase cursor-pointer p-2 w-full"
 						onclick={markBidAsWinner}>Mark Bid As Winner</button
 					>
 					<button
 						class="transition-all duration-300 bg-red-900 border-zinc-700 border-2 hover:bg-red-700
-					px-4 uppercase cursor-pointer p-2 w-full"
+					min-h-11 px-4 uppercase cursor-pointer p-2 w-full"
 						onclick={unmarkBidAsWinner}>Unmark Bid As Winner</button
 					>
 				</div>
-				<div class="flex flex-col gap-4">
+				<div class="flex flex-col gap-3">
 					<div class="text-center font-medium text-xl">Auction</div>
 					<button
 						class="transition-all duration-300 bg-zinc-900 border-zinc-700 border-2 hover:bg-zinc-700
-					px-4 uppercase cursor-pointer p-2 w-full"
+					min-h-11 px-4 uppercase cursor-pointer p-2 w-full"
 						onclick={openAuction}>Open Auction</button
 					>
 					<button
 						class="transition-all duration-300 bg-zinc-900 border-zinc-700 border-2 hover:bg-zinc-700
-					px-4 uppercase cursor-pointer p-2 w-full"
+					min-h-11 px-4 uppercase cursor-pointer p-2 w-full"
 						onclick={closeAuction}
 					>
 						Close Auction
@@ -265,7 +269,7 @@
 		</div>
 	{/if}
 	<div
-		class="w-full bg-gradient-to-r from-[#0a0e13]/95 border-0 to-[#1e2c3a]/95 text-white p-4 flex flex-col gap-4 mb-4 relative"
+		class="relative mb-4 flex w-full flex-col gap-4 bg-gradient-to-r from-[#0a0e13]/95 to-[#1e2c3a]/95 p-3 text-white sm:p-4"
 	>
 		<RectangleEllipsis
 			class="absolute top-4 right-4 cursor-pointer hover:text-gray-400"
@@ -273,7 +277,9 @@
 			onclick={() => (showKeyPrompt = !showKeyPrompt)}
 		/>
 		{#if showKeyPrompt}
-			<div class="absolute top-16 right-4 bg-zinc-800 p-4 rounded-lg shadow-lg w-64">
+			<div
+				class="absolute left-3 right-3 top-16 z-20 bg-zinc-800 p-4 shadow-lg sm:left-auto sm:w-64"
+			>
 				<label for="access-key" class="block mb-2 text-sm font-medium">Enter Access Key</label>
 				<input
 					id="access-key"
@@ -295,17 +301,19 @@
 				</div>
 			</div>
 		{/if}
-		<div class="text-center font-medium text-4xl">Burncastle {match.order} Auction</div>
-		<div class="flex w-full gap-4 min-h-96">
-			<div class="flex flex-col gap-4 items-center grow">
+		<div class="pr-11 text-center text-3xl font-medium sm:pr-0 sm:text-4xl">
+			Burncastle {match.order} Auction
+		</div>
+		<div class="flex min-h-96 w-full flex-col gap-4 xl:flex-row">
+			<div class="order-2 flex min-w-0 grow flex-col items-center gap-4 xl:order-1">
 				<div class="flex flex-col gap-4 w-full items-center">
-					<div class="text-center font-medium text-4xl">{teamOne.name}</div>
+					<div class="text-center text-3xl font-medium sm:text-4xl">{teamOne.name}</div>
 					<img
 						src={`/players/${teamOne.captain?.nameId}.png`}
 						alt={teamOne.name}
 						class="md:w-32 md:h-32 w-16 h-16"
 					/>
-					<div class="text-center font-medium text-4xl flex items-center gap-2">
+					<div class="flex items-center gap-2 text-center text-3xl font-medium sm:text-4xl">
 						<div>£{startingAmount - teamOneSpend}</div>
 						{#if topBid && !topBid.winningBid}
 							{#if topBid.bidderId === teamOne.captain?._id}
@@ -317,7 +325,7 @@
 					</div>
 				</div>
 				<div class="flex flex-col gap-4 w-full items-center justify-center">
-					<table class="w-full">
+					<table class="w-full table-fixed">
 						<thead>
 							{#each teamOne.playerIds
 								.slice()
@@ -328,16 +336,18 @@
 								{@const previousPrice = getPreviousPrice(player)}
 								{#if playerData}
 									<tr>
-										<td class="md:w-16 md:h-16 w-16 h-16">
+										<td class="h-12 w-12 sm:h-16 sm:w-16">
 											<img
 												src={`/players/${playerData.nameId}.png`}
 												alt={playerData.name}
-												class="md:w-16 md:h-16 w-16 h-16"
+												class="h-12 w-12 sm:h-16 sm:w-16"
 											/>
 										</td>
-										<td class="text-left px-2 text-2xl">{playerData.name}</td>
-										<td class="text-center font-medium text-2xl w-16">£{price}</td>
-										<td class="text-center font-medium text-lg w-24">
+										<td class="truncate px-2 text-left text-base sm:text-2xl">{playerData.name}</td>
+										<td class="w-14 text-center text-base font-medium sm:w-16 sm:text-2xl"
+											>£{price}</td
+										>
+										<td class="hidden w-24 text-center text-lg font-medium sm:table-cell">
 											{#if previousPrice}
 												{#if previousPrice > price}
 													<span class="text-green-500">(- £{previousPrice - price})</span>
@@ -353,7 +363,9 @@
 					</table>
 				</div>
 			</div>
-			<div class="flex flex-col gap-4 items-center w-96 bg-black/15 py-4">
+			<div
+				class="order-1 flex w-full flex-col items-center gap-4 bg-black/15 px-2 py-4 xl:order-2 xl:w-96"
+			>
 				<div class=" mx-auto my-auto">
 					{#if !auctionState.live}
 						<span class="font-medium text-3xl">Auction Closed</span>
@@ -375,7 +387,7 @@
 								{/if}
 							</div>
 							{#if permissions === 'captain'}
-								<div class="flex gap-2">
+								<div class="grid w-full max-w-xs grid-cols-1 gap-2 sm:grid-cols-[1fr_auto]">
 									<input
 										step="1"
 										type="number"
@@ -383,11 +395,11 @@
 										bind:value={newBidAmountRaw}
 										min={0}
 										max={350}
-										class="text-white outline-none ring-0 bg-zinc-700 w-44 border-0"
+										class="min-h-11 w-full border-0 bg-zinc-700 text-white outline-none ring-0"
 									/>
 									<button
 										class="transition-all duration-300
-					hover:bg-gradient-to-r hover:from-[rgba(255,215,0,0.1)] hover:to-[rgba(255,255,255,0.05)] hover:shadow-[0_0_4px_rgba(255,215,0,0.3)] border-2 hover:border-[rgba(255,215,0,0.1)] bg-zinc-900 border-zinc-800 px-4 uppercase cursor-pointer"
+					min-h-11 hover:bg-gradient-to-r hover:from-[rgba(255,215,0,0.1)] hover:to-[rgba(255,255,255,0.05)] hover:shadow-[0_0_4px_rgba(255,215,0,0.3)] border-2 hover:border-[rgba(255,215,0,0.1)] bg-zinc-900 border-zinc-800 px-4 uppercase cursor-pointer"
 										onclick={() => submitBid()}
 									>
 										Submit Bid
@@ -400,14 +412,16 @@
 									<div class="text-white text-3xl">No bids</div>
 								{:else if topBid}
 									{@const highestBidder = getPlayer(topBid.bidderId)}
-									<div class="text-white text-3xl font-medium flex items-center gap-2">
+									<div
+										class="flex flex-wrap items-center justify-center gap-2 text-2xl font-medium text-white sm:text-3xl"
+									>
 										£{topBid.amount}
 										<span class="font-normal text-2xl">- {highestBidder?.name}</span>
 									</div>
 								{/if}
 							</div>
-							<div class="text-white text-3xl font-medium mt-16">Breakdown</div>
-							<table class="w-80">
+							<div class="mt-6 text-2xl font-medium text-white sm:mt-16 sm:text-3xl">Breakdown</div>
+							<table class="w-full max-w-80">
 								<thead>
 									<tr>
 										<th class="text-lg font-medium text-left"></th>
@@ -442,15 +456,15 @@
 					{/if}
 				</div>
 			</div>
-			<div class="flex flex-col gap-4 items-center grow">
+			<div class="order-3 flex min-w-0 grow flex-col items-center gap-4">
 				<div class="flex flex-col gap-4 w-full items-center">
-					<div class="text-center font-medium text-4xl">{teamTwo.name}</div>
+					<div class="text-center text-3xl font-medium sm:text-4xl">{teamTwo.name}</div>
 					<img
 						src={`/players/${teamTwo.captain?.nameId}.png`}
 						alt={teamTwo.name}
 						class="md:w-32 md:h-32 w-16 h-16"
 					/>
-					<div class="text-center font-medium text-4xl flex items-center gap-2">
+					<div class="flex items-center gap-2 text-center text-3xl font-medium sm:text-4xl">
 						<div>£{startingAmount - teamTwoSpend}</div>
 						{#if topBid && !topBid.winningBid}
 							{#if topBid.bidderId === teamTwo.captain?._id}
@@ -462,7 +476,7 @@
 					</div>
 				</div>
 				<div class="flex flex-col gap-4 w-full items-center justify-center">
-					<table class="w-full">
+					<table class="w-full table-fixed">
 						<tbody>
 							{#each teamTwo.playerIds
 								.slice()
@@ -475,7 +489,7 @@
 								{@const previousPrice = getPreviousPrice(player)}
 								{#if playerData}
 									<tr>
-										<td class="text-center font-medium text-lg w-24">
+										<td class="hidden w-24 text-center text-lg font-medium sm:table-cell">
 											{#if previousPrice}
 												{#if previousPrice > price}
 													<span class="text-green-500">(- £{previousPrice - price})</span>
@@ -484,13 +498,16 @@
 												{/if}
 											{/if}
 										</td>
-										<td class="text-center font-medium text-2xl w-16">£{price}</td>
-										<td class="text-right px-2 text-2xl">{playerData.name}</td>
-										<td class="md:w-16 md:h-16 w-16 h-16">
+										<td class="w-14 text-center text-base font-medium sm:w-16 sm:text-2xl"
+											>£{price}</td
+										>
+										<td class="truncate px-2 text-right text-base sm:text-2xl">{playerData.name}</td
+										>
+										<td class="h-12 w-12 sm:h-16 sm:w-16">
 											<img
 												src={`/players/${playerData.nameId}.png`}
 												alt={playerData.name}
-												class="md:w-16 md:h-16 w-16 h-16"
+												class="h-12 w-12 sm:h-16 sm:w-16"
 											/>
 										</td>
 									</tr>

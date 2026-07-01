@@ -42,7 +42,8 @@
 
 	function eventTone(event: MatchEvent) {
 		if (event.type === 'goal') return 'border-green-500/40 bg-green-950/30 text-green-200';
-		if (event.type === 'yellow_card') return 'border-yellow-400/40 bg-yellow-950/20 text-yellow-200';
+		if (event.type === 'yellow_card')
+			return 'border-yellow-400/40 bg-yellow-950/20 text-yellow-200';
 		if (event.type === 'red_card') return 'border-red-500/40 bg-red-950/30 text-red-200';
 		if (event.type === 'position_change') return 'border-blue-400/40 bg-blue-950/30 text-blue-200';
 		if (event.type === 'break') return 'border-highlight/40 bg-yellow-950/20 text-highlight';
@@ -166,6 +167,27 @@
 		return 'from-orange-300 via-amber-700 to-amber-900';
 	}
 
+	function readableTextColour(background?: string) {
+		if (!background) return '#f8fafc';
+		const hex = background.replace('#', '');
+		const fullHex =
+			hex.length === 3
+				? hex
+						.split('')
+						.map((char) => char + char)
+						.join('')
+				: hex;
+		const value = Number.parseInt(fullHex, 16);
+		if (Number.isNaN(value)) return '#f8fafc';
+
+		const red = (value >> 16) & 255;
+		const green = (value >> 8) & 255;
+		const blue = value & 255;
+		const luminance = (red * 299 + green * 587 + blue * 114) / 1000;
+
+		return luminance > 150 ? '#111827' : '#f8fafc';
+	}
+
 	function statIcons(count: number) {
 		return Array.from({ length: Math.min(3, Math.max(0, count)) });
 	}
@@ -209,10 +231,14 @@
 
 	function positionSide(position: string) {
 		const pos = position.toUpperCase();
-		if (pos.includes('LWB') || pos.includes('LB') || pos.includes('LW') || pos.includes('LM')) return 18;
-		if (pos.includes('LCB') || pos.includes('LCM') || pos.includes('LAM') || pos.includes('LS')) return 34;
-		if (pos.includes('RWB') || pos.includes('RB') || pos.includes('RW') || pos.includes('RM')) return 82;
-		if (pos.includes('RCB') || pos.includes('RCM') || pos.includes('RAM') || pos.includes('RS')) return 66;
+		if (pos.includes('LWB') || pos.includes('LB') || pos.includes('LW') || pos.includes('LM'))
+			return 18;
+		if (pos.includes('LCB') || pos.includes('LCM') || pos.includes('LAM') || pos.includes('LS'))
+			return 34;
+		if (pos.includes('RWB') || pos.includes('RB') || pos.includes('RW') || pos.includes('RM'))
+			return 82;
+		if (pos.includes('RCB') || pos.includes('RCM') || pos.includes('RAM') || pos.includes('RS'))
+			return 66;
 		return 50;
 	}
 
@@ -234,7 +260,10 @@
 
 		return orderedStats.map((stat, index) => ({
 			stat,
-			side: count === 1 ? Math.min(88, Math.max(12, anchor)) : offsetStart + (span / (count - 1)) * index
+			side:
+				count === 1
+					? Math.min(88, Math.max(12, anchor))
+					: offsetStart + (span / (count - 1)) * index
 		}));
 	}
 
@@ -271,11 +300,10 @@
 			.sort(([a], [b]) => lineOrder(a) - lineOrder(b))
 			.flatMap(([line, lineStats]) =>
 				spreadLine(lineStats).map((placement) => ({
-						stat: placement.stat,
-						x: pitchX(teamIndex, line),
-						y: pitchY(teamIndex, placement.side)
-					})
-				)
+					stat: placement.stat,
+					x: pitchX(teamIndex, line),
+					y: pitchY(teamIndex, placement.side)
+				}))
 			);
 	}
 </script>
@@ -297,16 +325,20 @@
 	{:else if matchQuery.isLoading || !match}
 		<div class="bg-gradient-to-r from-[#0a0e13]/95 to-[#1e2c3a]/95 p-6">Loading match...</div>
 	{:else}
-		<section class="bg-gradient-to-r from-[#0a0e13]/95 to-[#1e2c3a]/95 p-4 flex flex-col gap-5">
+		<section
+			class="flex flex-col gap-5 bg-gradient-to-r from-[#0a0e13]/95 to-[#1e2c3a]/95 p-3 sm:p-4"
+		>
 			<div class="text-center">
 				<div class="text-zinc-300">Burncastle</div>
 				<div class="text-5xl font-bold">{match.order}</div>
 			</div>
 
-			<div class="grid grid-cols-[1fr_auto_1fr] gap-3 items-stretch">
-				<div class="flex flex-col md:flex-row gap-3 items-center justify-end text-right">
+			<div class="grid grid-cols-1 items-stretch gap-4 md:grid-cols-[1fr_auto_1fr] md:gap-3">
+				<div
+					class="flex flex-col items-center gap-3 text-center md:flex-row md:justify-end md:text-right"
+				>
 					<div>
-						<div class="text-3xl font-bold">{match.teams[0]?.name ?? 'Team 1'}</div>
+						<div class="text-2xl font-bold sm:text-3xl">{match.teams[0]?.name ?? 'Team 1'}</div>
 						<div class="text-zinc-300 normal-case">
 							{playerName(match.teams[0]?.captain)} captain
 						</div>
@@ -320,25 +352,29 @@
 					{/if}
 				</div>
 
-				<div class="flex items-center justify-center gap-3 px-4">
+				<div class="flex items-center justify-center gap-2 px-0 md:gap-3 md:px-4">
 					<div
-						class="w-20 h-20 flex items-center justify-center text-5xl font-bold"
-						style="background-color: {match.teams[0]?.teamColour ?? '#5e003f'};"
+						class="flex h-16 w-16 items-center justify-center text-4xl font-bold sm:h-20 sm:w-20 sm:text-5xl"
+						style="background-color: {match.teams[0]?.teamColour ??
+							'#5e003f'}; color: {readableTextColour(match.teams[0]?.teamColour ?? '#5e003f')};"
 					>
 						{match.teams[0]?.score ?? goalsForTeam(match.teams[0]?._id).length}
 					</div>
-					<div class="text-5xl font-bold">-</div>
+					<div class="text-4xl font-bold sm:text-5xl">-</div>
 					<div
-						class="w-20 h-20 flex items-center justify-center text-5xl font-bold"
-						style="background-color: {match.teams[1]?.teamColour ?? '#1e2c3a'};"
+						class="flex h-16 w-16 items-center justify-center text-4xl font-bold sm:h-20 sm:w-20 sm:text-5xl"
+						style="background-color: {match.teams[1]?.teamColour ??
+							'#1e2c3a'}; color: {readableTextColour(match.teams[1]?.teamColour ?? '#1e2c3a')};"
 					>
 						{match.teams[1]?.score ?? goalsForTeam(match.teams[1]?._id).length}
 					</div>
 				</div>
 
-				<div class="flex flex-col md:flex-row-reverse gap-3 items-center justify-start">
+				<div
+					class="flex flex-col items-center gap-3 text-center md:flex-row-reverse md:justify-start md:text-left"
+				>
 					<div>
-						<div class="text-3xl font-bold">{match.teams[1]?.name ?? 'Team 2'}</div>
+						<div class="text-2xl font-bold sm:text-3xl">{match.teams[1]?.name ?? 'Team 2'}</div>
 						<div class="text-zinc-300 normal-case">
 							{playerName(match.teams[1]?.captain)} captain
 						</div>
@@ -355,15 +391,17 @@
 		</section>
 
 		<div class="flex flex-col gap-4">
-			<section class="bg-gradient-to-r from-[#0a0e13]/95 to-[#1e2c3a]/95 p-4 flex flex-col gap-4">
+			<section
+				class="flex flex-col gap-4 bg-gradient-to-r from-[#0a0e13]/95 to-[#1e2c3a]/95 p-3 sm:p-4"
+			>
 				<div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
 					<div>
 						<div class="text-2xl font-bold">Lineups</div>
 						<div class="text-zinc-300 normal-case">Players arranged by their match position.</div>
 					</div>
-					<div class="flex bg-zinc-950/70 border border-zinc-700 w-fit">
+					<div class="flex min-h-11 w-full border border-zinc-700 bg-zinc-950/70 sm:w-fit">
 						<button
-							class="px-3 py-2 uppercase text-sm cursor-pointer {cardMode === 'simple'
+							class="flex-1 px-3 py-2 text-sm uppercase sm:flex-none {cardMode === 'simple'
 								? 'bg-highlight text-zinc-950 font-bold'
 								: 'text-zinc-300 hover:text-white'}"
 							onclick={() => (cardMode = 'simple')}
@@ -371,7 +409,7 @@
 							Simple
 						</button>
 						<button
-							class="px-3 py-2 uppercase text-sm cursor-pointer {cardMode === 'details'
+							class="flex-1 px-3 py-2 text-sm uppercase sm:flex-none {cardMode === 'details'
 								? 'bg-highlight text-zinc-950 font-bold'
 								: 'text-zinc-300 hover:text-white'}"
 							onclick={() => (cardMode = 'details')}
@@ -381,14 +419,14 @@
 					</div>
 				</div>
 
-					<div class="overflow-x-auto pb-2">
+				<div class="overflow-x-auto pb-2">
+					<div
+						class="relative min-h-[520px] min-w-[720px] overflow-hidden border-2 border-emerald-900/70 bg-cover bg-center bg-no-repeat md:min-h-[680px] md:min-w-[920px]"
+						style="background-image: url('/pitch-backdrop.jpg');"
+					>
 						<div
-							class="relative min-w-[920px] min-h-[680px] overflow-hidden border-2 border-emerald-900/70 bg-cover bg-center bg-no-repeat"
-							style="background-image: url('/pitch-backdrop.jpg');"
+							class="absolute left-6 top-6 max-w-[280px] border border-white/25 bg-zinc-950/50 px-3 py-2"
 						>
-							<div
-								class="absolute left-6 top-6 max-w-[280px] border border-white/25 bg-zinc-950/50 px-3 py-2"
-							>
 							<div class="font-bold text-lg truncate">{match.teams[0]?.name ?? 'Team 1'}</div>
 							<div class="text-sm text-zinc-300">{teamStats(0).length} players</div>
 						</div>
@@ -450,11 +488,11 @@
 												</div>
 											</div>
 										{/if}
-											<div
-												class="w-20 overflow-hidden rounded-md border-2 border-black/20 bg-gradient-to-bl {cardColour(
-													stat.rating
-												)} text-zinc-950 shadow-lg"
-											>
+										<div
+											class="w-20 overflow-hidden rounded-md border-2 border-black/20 bg-gradient-to-bl {cardColour(
+												stat.rating
+											)} text-zinc-950 shadow-lg"
+										>
 											<div class="flex items-start justify-between px-1.5 pt-1.5">
 												<div class="font-bold text-lg leading-none">{stat.rating}</div>
 												<div class="text-[10px] font-bold uppercase">{stat.position}</div>
@@ -469,20 +507,22 @@
 													<div class="pt-1 text-[11px] font-bold uppercase truncate">
 														{stat.player.name}
 													</div>
+												</div>
+											{:else}
+												<div class="px-1 py-1.5">
+													<div class="text-center text-[10px] font-bold uppercase truncate mb-1">
+														{stat.player.name}
 													</div>
-												{:else}
-													<div class="px-1 py-1.5">
-														<div class="text-center text-[10px] font-bold uppercase truncate mb-1">
-															{stat.player.name}
-														</div>
-														<div class="grid grid-cols-2 gap-x-1 gap-y-0.5 text-[9px] leading-none tabular-nums">
-															{#each detailRows(stat) as [label, value]}
-																<div class="grid min-w-0 grid-cols-[1fr_auto] items-center gap-0.5">
-																	<span class="min-w-0 text-right">{value}</span>
-																	<span class="font-bold">{label}</span>
-																</div>
-															{/each}
-														</div>
+													<div
+														class="grid grid-cols-2 gap-x-1 gap-y-0.5 text-[9px] leading-none tabular-nums"
+													>
+														{#each detailRows(stat) as [label, value]}
+															<div class="grid min-w-0 grid-cols-[1fr_auto] items-center gap-0.5">
+																<span class="min-w-0 text-right">{value}</span>
+																<span class="font-bold">{label}</span>
+															</div>
+														{/each}
+													</div>
 												</div>
 											{/if}
 										</div>
@@ -518,79 +558,84 @@
 				</div>
 			</section>
 
-			<section class="bg-gradient-to-r from-[#0a0e13]/95 to-[#1e2c3a]/95 p-4 flex flex-col gap-4">
-					<div>
-						<div class="text-xl font-bold">Timeline</div>
-					</div>
+			<section
+				class="flex flex-col gap-4 bg-gradient-to-r from-[#0a0e13]/95 to-[#1e2c3a]/95 p-3 sm:p-4"
+			>
+				<div>
+					<div class="text-xl font-bold">Timeline</div>
+				</div>
 
-					{#if match.events.length === 0}
-						<div class="text-zinc-300 normal-case py-8 text-center">No events recorded yet.</div>
-					{:else}
-							<div class="relative py-1">
-								<div class="absolute left-1/2 top-1 bottom-1 w-px -translate-x-1/2 bg-zinc-600/80"></div>
-								{#each match.events as event, eventIndex (event._id)}
-									{@const eventScore = scoreAtEvent(eventIndex)}
-									<div class="relative grid grid-cols-[minmax(0,1fr)_36px_minmax(0,1fr)] gap-2 py-1.5">
-									<div
-										class="row-start-1 w-full border p-2 {eventTone(
-											event
-										)} {eventCardPlacement(event)}"
-											>
-												<div class="flex items-center gap-1.5 {eventContentJustify(event)}">
-													<span class="text-sm font-bold uppercase">{eventLabel(event)}</span>
-													<span class="text-base font-bold">{event.minute}'</span>
-													<span class="text-xs font-bold text-zinc-100">{eventScoreText(eventScore)}</span>
-												</div>
-											{#if event.type === 'goal'}
-												<div
-													class="flex items-center gap-2 text-xs text-zinc-200 normal-case {eventContentJustify(
-														event
-												)}"
-											>
-												<span class="inline-flex items-center gap-1 leading-none">
-													<FootballIcon class="h-3.5 w-3.5 shrink-0" />
-													{playerName(event.player)}
-												</span>
-												{#if event.assistPlayer}
-													<span class="inline-flex items-center gap-1 leading-none">
-														<FootballBootIcon class="h-3.5 w-3.5 shrink-0" />
-														{event.assistPlayer.name}
-													</span>
-												{/if}
-												</div>
-											{:else if eventSummary(event)}
-												<div class="text-xs text-zinc-200 normal-case truncate">
-													{eventSummary(event)}
-												</div>
-											{/if}
-										</div>
-
-									{#if event.type !== 'break'}
+				{#if match.events.length === 0}
+					<div class="text-zinc-300 normal-case py-8 text-center">No events recorded yet.</div>
+				{:else}
+					<div class="relative py-1">
+						<div
+							class="absolute left-1/2 top-1 bottom-1 w-px -translate-x-1/2 bg-zinc-600/80"
+						></div>
+						{#each match.events as event, eventIndex (event._id)}
+							{@const eventScore = scoreAtEvent(eventIndex)}
+							<div class="relative grid grid-cols-[minmax(0,1fr)_36px_minmax(0,1fr)] gap-2 py-1.5">
+								<div
+									class="row-start-1 w-full border p-2 {eventTone(event)} {eventCardPlacement(
+										event
+									)}"
+								>
+									<div class="flex items-center gap-1.5 {eventContentJustify(event)}">
+										<span class="text-sm font-bold uppercase">{eventLabel(event)}</span>
+										<span class="text-base font-bold">{event.minute}'</span>
+										<span class="text-xs font-bold text-zinc-100">{eventScoreText(eventScore)}</span
+										>
+									</div>
+									{#if event.type === 'goal'}
 										<div
-											class="col-start-2 row-start-1 z-10 mx-auto flex h-9 w-9 self-center items-center justify-center rounded-full border-2 shadow-lg {eventMarkerTone(
+											class="flex items-center gap-2 text-xs text-zinc-200 normal-case {eventContentJustify(
 												event
 											)}"
-											title={eventLabel(event)}
 										>
-											{#if event.type === 'goal'}
-												<CircleDot size={17} strokeWidth={3} />
-											{:else if event.type === 'yellow_card'}
-												<RectangleVertical size={17} strokeWidth={3} />
-											{:else if event.type === 'red_card'}
-												<RectangleVertical size={17} strokeWidth={3} />
-											{:else if event.type === 'penalty'}
-												<Flag size={17} strokeWidth={3} />
-											{:else if event.type === 'position_change'}
-												<ArrowLeftRight size={17} strokeWidth={3} />
-											{:else if event.type === 'note'}
-												<StickyNote size={17} strokeWidth={3} />
-											{:else}
-												<BadgeAlert size={17} strokeWidth={3} />
+											<span class="inline-flex items-center gap-1 leading-none">
+												<FootballIcon class="h-3.5 w-3.5 shrink-0" />
+												{playerName(event.player)}
+											</span>
+											{#if event.assistPlayer}
+												<span class="inline-flex items-center gap-1 leading-none">
+													<FootballBootIcon class="h-3.5 w-3.5 shrink-0" />
+													{event.assistPlayer.name}
+												</span>
 											{/if}
+										</div>
+									{:else if eventSummary(event)}
+										<div class="text-xs text-zinc-200 normal-case truncate">
+											{eventSummary(event)}
 										</div>
 									{/if}
 								</div>
-							{/each}
+
+								{#if event.type !== 'break'}
+									<div
+										class="col-start-2 row-start-1 z-10 mx-auto flex h-9 w-9 self-center items-center justify-center rounded-full border-2 shadow-lg {eventMarkerTone(
+											event
+										)}"
+										title={eventLabel(event)}
+									>
+										{#if event.type === 'goal'}
+											<CircleDot size={17} strokeWidth={3} />
+										{:else if event.type === 'yellow_card'}
+											<RectangleVertical size={17} strokeWidth={3} />
+										{:else if event.type === 'red_card'}
+											<RectangleVertical size={17} strokeWidth={3} />
+										{:else if event.type === 'penalty'}
+											<Flag size={17} strokeWidth={3} />
+										{:else if event.type === 'position_change'}
+											<ArrowLeftRight size={17} strokeWidth={3} />
+										{:else if event.type === 'note'}
+											<StickyNote size={17} strokeWidth={3} />
+										{:else}
+											<BadgeAlert size={17} strokeWidth={3} />
+										{/if}
+									</div>
+								{/if}
+							</div>
+						{/each}
 					</div>
 				{/if}
 			</section>

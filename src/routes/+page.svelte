@@ -13,7 +13,7 @@
 			image="https://imgresizer.tntsports.io/unsafe/2560x1440/filters:format(jpeg)/origin-imgresizer.tntsports.io/2025/03/11/image-2c33751b-72bd-4b98-9cc2-8873bbd18247-85-2560-1440.jpeg"
 			title="MATCHES"
 			onClick={() => goto('/matches')}
-			class="w-full h-80"
+			class="h-64 w-full md:h-80"
 		>
 			<div class="flex flex-col items-stretch h-full">
 				<div>See historic Burncastle matches</div>
@@ -28,7 +28,7 @@
 			image="https://imgresizer.tntsports.io/unsafe/2560x1440/filters:format(jpeg)/origin-imgresizer.tntsports.io/2025/03/11/image-2c33751b-72bd-4b98-9cc2-8873bbd18247-85-2560-1440.jpeg"
 			title="AUCTIONS"
 			onClick={() => goto('/auctions')}
-			class="w-full h-80"
+			class="h-64 w-full md:h-80"
 		>
 			<div class="flex flex-col items-stretch h-full">
 				<div class="capitalize"></div>
@@ -40,7 +40,7 @@
 			image="https://imgresizer.tntsports.io/unsafe/2560x1440/filters:format(jpeg)/origin-imgresizer.tntsports.io/2025/03/11/image-2c33751b-72bd-4b98-9cc2-8873bbd18247-85-2560-1440.jpeg"
 			title="PLAYERS"
 			onClick={() => goto('/players')}
-			class="w-full"
+			class="h-56 w-full md:h-64"
 		>
 			See all player stats
 		</ClickableTileWithImage>
@@ -49,7 +49,7 @@
 			image="https://imgresizer.tntsports.io/unsafe/2560x1440/filters:format(jpeg)/origin-imgresizer.tntsports.io/2025/03/11/image-2c33751b-72bd-4b98-9cc2-8873bbd18247-85-2560-1440.jpeg"
 			title="GALLERY"
 			onClick={() => goto('/gallery')}
-			class="w-full"
+			class="h-56 w-full md:h-64"
 		>
 			See images from the burncastle gallery
 		</ClickableTileWithImage>

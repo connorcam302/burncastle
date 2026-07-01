@@ -5,10 +5,14 @@
 </script>
 
 <nav
-	class="flex h-10 items-stretch bg-gradient-to-r from-[#0a0e13] to-[#1e2c3a] select-none overflow-hidden font-sans w-full text-xl"
+	class="flex min-h-12 min-w-0 max-w-full items-stretch overflow-x-auto overflow-y-hidden bg-gradient-to-r from-[#0a0e13] to-[#1e2c3a] font-sans text-base select-none md:min-h-10 md:overflow-hidden md:text-xl"
+	aria-label="Primary navigation"
 >
 	{#each menuItems as item, i (i)}
-		<a class="relative flex items-stretch cursor-pointer group -left-2" href={`/${item}`}>
+		<a
+			class="group relative -left-2 flex min-h-12 min-w-max flex-1 cursor-pointer items-stretch md:min-h-10"
+			href={`/${item}`}
+		>
 			<!-- Diagonal divider (skip for last item) -->
 			{#if i !== menuItems.length - 1}
 				<div class="absolute right-0 top-2 h-6 w-px bg-[#2b3b4f] skew-x-[25deg] z-20"></div>
@@ -23,7 +27,7 @@
 				>
 					<!-- Unskewed text -->
 					<span
-						class="skew-x-[-25deg] text-xl uppercase whitespace-nowrap transition-colors duration-300 text-[#ffd700] font-bold"
+						class="skew-x-[-25deg] whitespace-nowrap text-base font-bold uppercase text-[#ffd700] transition-colors duration-300 md:text-xl"
 					>
 						{#if item === ''}
 							Home
@@ -34,11 +38,11 @@
 				</div>
 			{:else}
 				<div
-					class="h-full flex items-center px-6 skew-x-[25deg] transition-all duration-300 border-2 border-transparent"
+					class="flex h-full items-center border-2 border-transparent px-5 skew-x-[25deg] transition-all duration-300 md:px-6"
 				>
 					<!-- Unskewed text -->
 					<span
-						class="skew-x-[-25deg] uppercase whitespace-nowrap transition-colors duration-300 text-[#aaa] group-hover:text-white text-xl font-medium"
+						class="skew-x-[-25deg] whitespace-nowrap text-base font-medium uppercase text-[#aaa] transition-colors duration-300 group-hover:text-white md:text-xl"
 					>
 						{#if item === ''}
 							Home

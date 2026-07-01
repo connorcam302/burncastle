@@ -69,6 +69,27 @@
 	const outfieldLabels = ['PAC', 'SHO', 'PAS', 'DRI', 'DEF', 'PHY'];
 	const keeperLabels = ['DIV', 'HAN', 'KIC', 'REF', 'SPE', 'POS'];
 
+	function readableTextColour(background?: string) {
+		if (!background) return '#f8fafc';
+		const hex = background.replace('#', '');
+		const fullHex =
+			hex.length === 3
+				? hex
+						.split('')
+						.map((char) => char + char)
+						.join('')
+				: hex;
+		const value = Number.parseInt(fullHex, 16);
+		if (Number.isNaN(value)) return '#f8fafc';
+
+		const red = (value >> 16) & 255;
+		const green = (value >> 8) & 255;
+		const blue = value & 255;
+		const luminance = (red * 299 + green * 587 + blue * 114) / 1000;
+
+		return luminance > 150 ? '#111827' : '#f8fafc';
+	}
+
 	function createEmptyDraft(): MatchDraft {
 		return {
 			order: 1,
@@ -105,7 +126,9 @@
 	function sortPlayerIds(playerIds: Id<'players'>[]) {
 		return playerIds
 			.slice()
-			.sort((a, b) => playerName(a).localeCompare(playerName(b), undefined, { sensitivity: 'base' }));
+			.sort((a, b) =>
+				playerName(a).localeCompare(playerName(b), undefined, { sensitivity: 'base' })
+			);
 	}
 
 	function sortedStats() {
@@ -134,7 +157,9 @@
 	}
 
 	function breakdownMode(breakdown: Record<string, number>): StatMode {
-		return breakdown.diving !== undefined || breakdown.handling !== undefined ? 'keeper' : 'outfield';
+		return breakdown.diving !== undefined || breakdown.handling !== undefined
+			? 'keeper'
+			: 'outfield';
 	}
 
 	function makeBreakdown(stat: StatDraft) {
@@ -292,7 +317,8 @@
 		draft.teams[teamIndex].captainId = playerId || undefined;
 		draft.stats = draft.stats.map((stat) => ({
 			...stat,
-			isCaptain: stat.playerId === playerId || draft.teams.some((team) => team.captainId === stat.playerId)
+			isCaptain:
+				stat.playerId === playerId || draft.teams.some((team) => team.captainId === stat.playerId)
 		}));
 	}
 
@@ -317,7 +343,9 @@
 			...draft.events,
 			{
 				...eventDraft,
-				teamIndex: eventDraft.playerId ? playerTeamIndex(eventDraft.playerId) : eventDraft.teamIndex,
+				teamIndex: eventDraft.playerId
+					? playerTeamIndex(eventDraft.playerId)
+					: eventDraft.teamIndex,
 				assistPlayerId: eventDraft.type === 'goal' ? eventDraft.assistPlayerId : undefined
 			}
 		].sort((a, b) => a.minute - b.minute);
@@ -398,16 +426,16 @@
 	}
 </script>
 
-<div class="w-full text-white flex flex-col gap-4">
+<div class="flex w-full min-w-0 flex-col gap-4 text-white">
 	<div class="flex flex-col md:flex-row md:items-end justify-between gap-3">
-		<div>
+		<div class="min-w-0">
 			<div class="text-4xl font-bold">Matches</div>
-			<div class="text-zinc-300 normal-case">
+			<div class="max-w-prose text-zinc-300 normal-case">
 				Pick a Burncastle to view, edit an existing record, or create a new match.
 			</div>
 		</div>
 		<button
-			class="flex items-center gap-2 bg-zinc-900 border-2 border-zinc-700 hover:bg-zinc-800 px-4 py-2 uppercase cursor-pointer w-fit"
+			class="flex min-h-11 w-full items-center justify-center gap-2 border-2 border-zinc-700 bg-zinc-900 px-4 py-2 uppercase hover:bg-zinc-800 sm:w-fit"
 			onclick={startNew}
 		>
 			<Plus size={18} />
@@ -419,7 +447,9 @@
 		<div class="flex flex-col md:flex-row md:items-center justify-between gap-2">
 			<div>
 				<div class="text-xl font-bold">Burncastle Archive</div>
-				<div class="text-sm text-zinc-400 normal-case">Click a match to view it. Use the pencil to edit.</div>
+				<div class="text-sm text-zinc-400 normal-case">
+					Click a match to view it. Use the pencil to edit.
+				</div>
 			</div>
 			<div class="text-sm text-zinc-400">{matchList.length} matches</div>
 		</div>
@@ -454,10 +484,31 @@
 									<Pencil size={18} />
 								</button>
 							</div>
-							<a href={`/matches/${match._id}`} class="flex items-center justify-between mt-2 text-lg gap-3">
+							<a
+								href={`/matches/${match._id}`}
+								class="flex items-center justify-between mt-2 text-lg gap-3"
+							>
 								<div class="truncate">{match.teams[0]?.name ?? 'Team 1'}</div>
-								<div class="font-bold whitespace-nowrap">
-									{match.teams[0]?.score ?? 0} - {match.teams[1]?.score ?? 0}
+								<div class="flex items-center gap-1 font-bold whitespace-nowrap">
+									<span
+										class="flex min-w-8 justify-center px-2 py-1"
+										style="background-color: {match.teams[0]?.teamColour ??
+											'#5e003f'}; color: {readableTextColour(
+											match.teams[0]?.teamColour ?? '#5e003f'
+										)};"
+									>
+										{match.teams[0]?.score ?? 0}
+									</span>
+									<span>-</span>
+									<span
+										class="flex min-w-8 justify-center px-2 py-1"
+										style="background-color: {match.teams[1]?.teamColour ??
+											'#1e2c3a'}; color: {readableTextColour(
+											match.teams[1]?.teamColour ?? '#1e2c3a'
+										)};"
+									>
+										{match.teams[1]?.score ?? 0}
+									</span>
 								</div>
 								<div class="truncate text-right">{match.teams[1]?.name ?? 'Team 2'}</div>
 							</a>
@@ -482,16 +533,16 @@
 						Goals and assists come from timeline events. Player cards hold ratings and positions.
 					</div>
 				</div>
-				<div class="flex gap-2">
+				<div class="grid grid-cols-2 gap-2 sm:flex">
 					<button
-						class="flex items-center gap-2 bg-zinc-900 border-2 border-zinc-700 hover:bg-zinc-800 px-4 py-2 uppercase cursor-pointer"
+						class="flex min-h-11 items-center justify-center gap-2 border-2 border-zinc-700 bg-zinc-900 px-4 py-2 uppercase hover:bg-zinc-800"
 						onclick={closeEditor}
 					>
 						<X size={18} />
 						Close
 					</button>
 					<button
-						class="flex items-center gap-2 bg-burnley border-2 border-highlight/40 hover:bg-[#7a1055] px-4 py-2 uppercase cursor-pointer disabled:opacity-50"
+						class="flex min-h-11 items-center justify-center gap-2 border-2 border-highlight/40 bg-burnley px-4 py-2 uppercase hover:bg-[#7a1055] disabled:opacity-50"
 						onclick={saveMatch}
 						disabled={saveState === 'saving' || draft.participants.length === 0}
 					>
@@ -523,7 +574,11 @@
 					/>
 				</label>
 				<label class="flex items-center gap-3 mt-6">
-					<input type="checkbox" bind:checked={draft.hasAuction} class="bg-zinc-800 border-zinc-600" />
+					<input
+						type="checkbox"
+						bind:checked={draft.hasAuction}
+						class="bg-zinc-800 border-zinc-600"
+					/>
 					<span>Has Auction</span>
 				</label>
 			</div>
@@ -582,7 +637,7 @@
 								Add players, choose their team, and enter rating/card attributes.
 							</div>
 						</div>
-						<div class="flex gap-2">
+						<div class="grid grid-cols-[minmax(0,1fr)_auto] gap-2 sm:flex">
 							<select bind:value={candidatePlayerId} class="bg-zinc-800 border-zinc-600 text-white">
 								<option value="">Add player</option>
 								{#each availablePlayers() as player (player._id)}
@@ -625,7 +680,10 @@
 										<tr class="border-b border-zinc-800">
 											<td class="py-2 pr-2 font-medium">{playerName(stat.playerId)}</td>
 											<td class="py-2 px-2">
-												<select bind:value={stat.teamIndex} class="bg-zinc-800 border-zinc-600 text-white">
+												<select
+													bind:value={stat.teamIndex}
+													class="bg-zinc-800 border-zinc-600 text-white"
+												>
 													<option value={0}>{draft.teams[0].name}</option>
 													<option value={1}>{draft.teams[1].name}</option>
 												</select>
@@ -646,7 +704,10 @@
 												/>
 											</td>
 											<td class="py-2 px-2">
-												<select bind:value={stat.mode} class="bg-zinc-800 border-zinc-600 text-white">
+												<select
+													bind:value={stat.mode}
+													class="bg-zinc-800 border-zinc-600 text-white"
+												>
 													<option value="outfield">Outfield</option>
 													<option value="keeper">Keeper</option>
 												</select>
@@ -723,7 +784,10 @@
 						{#if eventDraft.type !== 'break'}
 							<label class="flex flex-col gap-1 col-span-2">
 								<span class="text-sm text-zinc-300">Player</span>
-								<select bind:value={eventDraft.playerId} class="bg-zinc-800 border-zinc-600 text-white">
+								<select
+									bind:value={eventDraft.playerId}
+									class="bg-zinc-800 border-zinc-600 text-white"
+								>
 									<option value={undefined}>Select player</option>
 									{#each sortedStats() as stat (stat.playerId)}
 										<option value={stat.playerId}>{playerName(stat.playerId)}</option>
@@ -750,13 +814,15 @@
 							<input
 								bind:value={eventDraft.note}
 								class="bg-zinc-800 border-zinc-600 text-white"
-								placeholder={eventDraft.type === 'position_change' ? 'New position, e.g. ST to CM' : 'Optional'}
+								placeholder={eventDraft.type === 'position_change'
+									? 'New position, e.g. ST to CM'
+									: 'Optional'}
 							/>
 						</label>
 					</div>
 
 					<button
-						class="flex justify-center items-center gap-2 bg-zinc-900 border-2 border-zinc-700 hover:bg-zinc-800 px-3 py-2 uppercase cursor-pointer disabled:opacity-50"
+						class="flex min-h-11 items-center justify-center gap-2 border-2 border-zinc-700 bg-zinc-900 px-3 py-2 uppercase hover:bg-zinc-800 disabled:opacity-50"
 						onclick={addEvent}
 						disabled={draft.stats.length === 0}
 					>
@@ -771,7 +837,9 @@
 							</div>
 						{:else}
 							{#each draft.events as event, index (index)}
-								<div class="grid grid-cols-[56px_1fr_32px] gap-3 items-start border border-zinc-700 bg-zinc-900/50 p-3">
+								<div
+									class="grid grid-cols-[56px_1fr_32px] gap-3 items-start border border-zinc-700 bg-zinc-900/50 p-3"
+								>
 									<div class="font-bold text-highlight">{event.minute}'</div>
 									<div>
 										<div class="font-bold {eventTone(event)}">
@@ -788,7 +856,9 @@
 										{#if event.note}
 											<div class="text-sm text-zinc-400 normal-case">{event.note}</div>
 										{/if}
-										<div class="text-xs text-zinc-500 mt-1">{draft.teams[event.teamIndex]?.name}</div>
+										<div class="text-xs text-zinc-500 mt-1">
+											{draft.teams[event.teamIndex]?.name}
+										</div>
 									</div>
 									<button
 										class="text-red-300 hover:text-red-100 cursor-pointer"

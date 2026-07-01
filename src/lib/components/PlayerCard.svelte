@@ -13,11 +13,11 @@
 
 	const cardColour = (rating: number) => {
 		if (rating >= 65)
-			return 'bg-gradient-to-bl from-amber-200 via-yellow-400 to-yellow-600 px-4 py-2 rounded-lg w-44';
+			return 'w-40 rounded-lg bg-gradient-to-bl from-amber-200 via-yellow-400 to-yellow-600 px-3 py-2 sm:w-44';
 		else if (rating >= 60)
-			return 'bg-gradient-to-bl from-gray-200 via-gray-300 to-gray-500 px-4 py-2 rounded-lg w-44';
+			return 'w-40 rounded-lg bg-gradient-to-bl from-gray-200 via-gray-300 to-gray-500 px-3 py-2 sm:w-44';
 		else
-			return 'bg-gradient-to-bl from-orange-300 via-amber-700 to-amber-900 px-4 py-2 rounded-lg w-44';
+			return 'w-40 rounded-lg bg-gradient-to-bl from-orange-300 via-amber-700 to-amber-900 px-3 py-2 sm:w-44';
 	};
 </script>
 
@@ -25,12 +25,16 @@
 	<div class={cn('text-black', cardColour(stats.rating ?? 0))}>
 		<div class="flex justify-between">
 			<div class="flex flex-col items-center w-fit">
-				<div class="font-medium text-3xl">{stats.rating ?? 0}</div>
-				<div class="text-xl">{stats.position ?? '??'}</div>
+				<div class="text-2xl font-medium sm:text-3xl">{stats.rating ?? 0}</div>
+				<div class="text-lg sm:text-xl">{stats.position ?? '??'}</div>
 			</div>
-			<img src={`/players/${player.nameId}.png`} alt={player.name} class="w-24 h-24" />
+			<img
+				src={`/players/${player.nameId}.png`}
+				alt={player.name}
+				class="h-20 w-20 sm:h-24 sm:w-24"
+			/>
 		</div>
-		<div class="uppercase text-center text-xl font-medium">
+		<div class="truncate text-center text-lg font-medium uppercase sm:text-xl">
 			{player.name}
 			{#if stats.isCaptain}(C){/if}
 		</div>
